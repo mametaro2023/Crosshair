@@ -20,6 +20,8 @@ def print_help():
     print("  --crosshair-color     : クロスヘアの色をカラーピッカーで変更")
     print("  --dot-out-color       : ドット外枠の色をカラーピッカーで変更")
     print("  --dot-in-color        : ドット内側の色をカラーピッカーで変更")
+    print("  --crosshair-alpha [0.0〜1.0] : クロスヘアの透明度を変更")
+    print("  --dot-alpha [0.0〜1.0]       : ドットの透明度を変更（外枠・内側共通）")
     print("  --disable-key         : 指定したキーを無効化する")
     print("  --multiple-disable-keys : 複数のキーをまとめて無効化する（Enterキーで確定）")
     print("  --enable-key          : 無効化されたキーを1つ有効化する")
@@ -35,7 +37,9 @@ def load_config():
         "crosshair_color": "#00FF66",
         "dot_outer_color": "#FFFFFF",
         "dot_inner_color": "#000000",
-        "disabled_keys": []  # 追加
+        "disabled_keys": [],  # 追加
+        "crosshair_alpha": 1.0,
+        "dot_alpha": 1.0,
     }
     if os.path.exists(CONFIG_FILE):
         try:
@@ -80,6 +84,9 @@ class CrosshairOverlay(QtWidgets.QWidget):
         self.dot_outer_color = config["dot_outer_color"]
         self.dot_inner_color = config["dot_inner_color"]
 
+        self.crosshair_alpha = config.get("crosshair_alpha", 1.0)
+        self.dot_alpha = config.get("dot_alpha", 1.0)
+
         self.disabled_keys = config["disabled_keys"]
         # 起動時に保存されたキーを無効化
         for k in self.disabled_keys:
@@ -121,7 +128,9 @@ class CrosshairOverlay(QtWidgets.QWidget):
             "crosshair_color": self.crosshair_color,
             "dot_outer_color": self.dot_outer_color,
             "dot_inner_color": self.dot_inner_color,
-            "disabled_keys": self.disabled_keys
+            "disabled_keys": self.disabled_keys,
+            "crosshair_alpha": self.crosshair_alpha,
+            "dot_alpha": self.dot_alpha,
         }
 
     def print_parameters(self):
@@ -132,6 +141,8 @@ class CrosshairOverlay(QtWidgets.QWidget):
         print(f"  ドット外枠色 : {self.dot_outer_color}")
         print(f"  ドット内側色 : {self.dot_inner_color}")
         print(f"  ドット直径   : {self.dot_radius * 2}")
+        print(f"  クロスヘア透明度: {self.crosshair_alpha}")
+        print(f"  ドット透明度   : {self.dot_alpha}")
         print(f"  無効化キー   : {', '.join(self.disabled_keys) if self.disabled_keys else 'なし'}")
         print("=====================")
 
@@ -141,7 +152,9 @@ class CrosshairOverlay(QtWidgets.QWidget):
 
         # クロスヘア
         if self.crosshair_visible:
-            pen = QtGui.QPen(QtGui.QColor(self.crosshair_color), 2)
+            color = QtGui.QColor(self.crosshair_color)
+            color.setAlphaF(self.crosshair_alpha)
+            pen = QtGui.QPen(color, 2)
             painter.setPen(pen)
             gap = 10
             painter.drawLine(self.center_x - self.size, self.center_y,
@@ -155,8 +168,10 @@ class CrosshairOverlay(QtWidgets.QWidget):
 
         # ドット
         if self.dot_visible and self.dot_radius > 0:
-            painter.setBrush(QtGui.QBrush(QtGui.QColor(self.dot_outer_color)))
-            painter.setPen(QtGui.QPen(QtGui.QColor(self.dot_outer_color)))
+            outer_color = QtGui.QColor(self.dot_outer_color)
+            outer_color.setAlphaF(self.dot_alpha)
+            painter.setBrush(QtGui.QBrush(outer_color))
+            painter.setPen(QtGui.QPen(outer_color))
             painter.drawEllipse(QtCore.QRect(
                 self.center_x - self.dot_radius,
                 self.center_y - self.dot_radius,
@@ -165,14 +180,17 @@ class CrosshairOverlay(QtWidgets.QWidget):
             ))
             if self.dot_radius > 1:
                 inner_r = self.dot_radius - 1
-                painter.setBrush(QtGui.QBrush(QtGui.QColor(self.dot_inner_color)))
-                painter.setPen(QtGui.QPen(QtGui.QColor(self.dot_inner_color)))
+                inner_color = QtGui.QColor(self.dot_inner_color)
+                inner_color.setAlphaF(self.dot_alpha)
+                painter.setBrush(QtGui.QBrush(inner_color))
+                painter.setPen(QtGui.QPen(inner_color))
                 painter.drawEllipse(QtCore.QRect(
                     self.center_x - inner_r,
                     self.center_y - inner_r,
                     inner_r * 2,
                     inner_r * 2
                 ))
+
     
     def disable_key(self, key):
         if key == "enter":
@@ -200,7 +218,9 @@ COMMANDS = {
     "--dot-in-color": "pick_dot_inner_color",
     "--all-enable-keys": "enable_all_keys",
     "-exit": "exit",
-    "-help": "help"
+    "-help": "help",
+    "--crosshair-alpha": "set_crosshair_alpha",
+    "--dot-alpha": "set_dot_alpha",
 }
 
 def clear_keyboard_buffer():
@@ -257,6 +277,27 @@ def input_thread():
             key = keyboard.read_key()
             command_queue.put(("enable_key", key))
             print(f"キー {key} を有効化しました。")
+        elif raw.startswith("--crosshair-alpha"):
+            parts = raw.split()
+            if len(parts) == 2:
+                try:
+                    alpha = float(parts[1])
+                    command_queue.put(("set_crosshair_alpha", alpha))
+                except ValueError:
+                    print("使用方法: --crosshair-alpha [0.0〜1.0]")
+            else:
+                print("使用方法: --crosshair-alpha [0.0〜1.0]")
+
+        elif raw.startswith("--dot-alpha"):
+            parts = raw.split()
+            if len(parts) == 2:
+                try:
+                    alpha = float(parts[1])
+                    command_queue.put(("set_dot_alpha", alpha))
+                except ValueError:
+                    print("使用方法: --dot-alpha [0.0〜1.0]")
+            else:
+                print("使用方法: --dot-alpha [0.0〜1.0]")
         elif raw in COMMANDS:
             if raw == "-exit":
                 if overlay:
@@ -305,6 +346,10 @@ def gui_main():
                 overlay.enable_key(val)
             elif cmd == "enable_all_keys":
                 overlay.enable_all_keys()
+            elif cmd == "set_crosshair_alpha":
+                overlay.crosshair_alpha = max(0.0, min(val, 1.0))
+            elif cmd == "set_dot_alpha":
+                overlay.dot_alpha = max(0.0, min(val, 1.0))
             elif cmd == "exit":
                 app.quit()
                 return
