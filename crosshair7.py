@@ -127,13 +127,16 @@ class CrosshairOverlay(QtWidgets.QWidget):
 
         def keyPressEvent(self, event):
             # まず event.text() で取得を試みる
-            key = event.text().lower()
+            #key = event.text().lower()
+            key = keyboard.read_key()
+            
             if not key:
                 # 取得できなければ従来の方法へフォールバック
                 key = QtGui.QKeySequence(event.key()).toString().lower()
             if key == "return":
                 QtWidgets.QMessageBox.information(self, "無効化不可", "Enterキーは無効化できません。")
                 return
+            
             self.accept()
             if self.key_callback:
                 self.key_callback(key)
@@ -364,10 +367,12 @@ class CrosshairOverlay(QtWidgets.QWidget):
         enable_all_btn.clicked.connect(self.enable_all_keys_gui)
         layout.addWidget(enable_all_btn)
 
+        
         # CUIモードへ切り替え
         cui_btn = QtWidgets.QPushButton("CUIモードに切り替え")
         cui_btn.clicked.connect(self.switch_to_cui)
         layout.addWidget(cui_btn)
+        
 
         self.panel.setLayout(layout)
         self.panel.setGeometry(100, 100, 300, 100)
