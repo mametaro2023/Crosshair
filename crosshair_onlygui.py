@@ -3,6 +3,7 @@ import threading
 import queue
 import json
 import os
+import math
 import keyboard
 from pynput import mouse
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -90,6 +91,79 @@ def save_config(config):
         print("設定保存に失敗:", e)
 
 
+def build_modern_stylesheet():
+    """Return a modern dark stylesheet that targets the control panel and common inputs.
+    Note: Avoid setting a global QWidget background to keep the overlay transparent.
+    """
+    return """
+    /* Global font and smoothing */
+    * {
+        font-family: 'Noto Sans JP', 'Segoe UI', 'Meiryo', sans-serif;
+        letter-spacing: 0.2px;
+    }
+
+    /* Panel container */
+    #ControlPanel {
+        background-color: rgba(15, 17, 26, 230);
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 12px;
+        padding: 8px;
+    }
+
+    /* Menu bar */
+    QMenuBar { background: transparent; border: none; }
+    QMenuBar::item { background: transparent; padding: 6px 10px; color: #e6e6e6; }
+    QMenuBar::item:selected { background: rgba(255,255,255,0.06); border-radius: 6px; }
+    QMenu { background-color: #0f111a; border: 1px solid #2c313c; }
+    QMenu::item { padding: 6px 10px; }
+    QMenu::item:selected { background-color: #2a2f3a; }
+
+    /* Buttons */
+    QPushButton {
+        background-color: #1e222a;
+        color: #e6e6e6;
+        border: 1px solid #2c313c;
+        border-radius: 8px;
+        padding: 6px 10px;
+    }
+    QPushButton:hover { background-color: #2a2f3a; border-color: #3a3f4b; }
+    QPushButton:pressed { background-color: #141821; }
+    QPushButton:disabled { color: rgba(230,230,230,0.4); border-color: rgba(44,49,60,0.6); }
+
+    /* ComboBox */
+    QComboBox {
+        background-color: #141821;
+        color: #e6e6e6;
+        border: 1px solid #2c313c;
+        border-radius: 8px;
+        padding: 6px 10px;
+    }
+    QComboBox QAbstractItemView { background-color: #0f111a; color: #e6e6e6; selection-background-color: #2a2f3a; }
+
+    /* Labels */
+    QLabel { color: #e6e6e6; }
+
+    /* Checkboxes */
+    QCheckBox { color: #e6e6e6; spacing: 8px; }
+    QCheckBox::indicator { width: 18px; height: 18px; }
+
+    /* Sliders */
+    QSlider::groove:horizontal { background: #2c313c; height: 6px; border-radius: 3px; }
+    QSlider::sub-page:horizontal { background: #4fad8a; height: 6px; border-radius: 3px; }
+    QSlider::handle:horizontal {
+        background: #5bd3a6; width: 16px; height: 16px; margin: -6px 0; border-radius: 8px; border: 2px solid #0f111a;
+    }
+
+    /* Color preview squares */
+    QLabel[colorSquare="true"] {
+        border: 1px solid #3a3f4b;
+        border-radius: 6px;
+    }
+
+    /* Separators */
+    QFrame[frameShape="4"] { /* HLine */ color: #2c313c; background-color: #2c313c; height: 1px; }
+    """
+
 class SettingsDialog(QtWidgets.QDialog):
     def __init__(self, parent=None, preset_folder_path=""):
         super().__init__(parent)
@@ -99,6 +173,7 @@ class SettingsDialog(QtWidgets.QDialog):
         path_layout = QtWidgets.QHBoxLayout()
         self.path_label = QtWidgets.QLabel(preset_folder_path)
         self.browse_btn = QtWidgets.QPushButton("参照")
+        self.browse_btn.setIcon(self.style().standardIcon(QtWidgets.QStyle.SP_DirIcon))
         self.browse_btn.clicked.connect(self.browse_folder)
         path_layout.addWidget(self.path_label)
         path_layout.addWidget(self.browse_btn)
@@ -147,7 +222,7 @@ class CrosshairOverlay(QtWidgets.QWidget):
             super().__init__()
             self.overlay = overlay
             self.setWindowTitle("Crosshair Control Panel")
-            self.setGeometry(100, 100, 400, 100) # 少し幅を広げる
+            self.setGeometry(100, 100, 520, 100) # 少し幅を広げる
 
         def closeEvent(self, event):
             # ダーティフラグがONの場合のみ、保存確認を行う
@@ -448,25 +523,46 @@ class CrosshairOverlay(QtWidgets.QWidget):
             dot_alpha *= 0.1
 
         if self.crosshair_visible:
-            color = QtGui.QColor(self.crosshair_color)
-            color.setAlphaF(ch_alpha)  # 決定した透明度を適用
-            pen = QtGui.QPen(color, 2)
-            painter.setPen(pen)
+            base = QtGui.QColor(self.crosshair_color)
+            base.setAlphaF(ch_alpha)
             gap = 10
+            # Glow pass
+            glow = QtGui.QColor(base)
+            glow.setAlphaF(max(0.0, ch_alpha * 0.25))
+            painter.setPen(QtGui.QPen(glow, 8))
+            painter.drawLine(self.center_x - self.size, self.center_y, self.center_x - gap, self.center_y)
+            painter.drawLine(self.center_x + gap, self.center_y, self.center_x + self.size, self.center_y)
+            painter.drawLine(self.center_x, self.center_y - self.size, self.center_x, self.center_y - gap)
+            painter.drawLine(self.center_x, self.center_y + gap, self.center_x, self.center_y + self.size)
+            # Crisp pass
+            pen = QtGui.QPen(base, 2)
+            painter.setPen(pen)
             painter.drawLine(self.center_x - self.size, self.center_y, self.center_x - gap, self.center_y)
             painter.drawLine(self.center_x + gap, self.center_y, self.center_x + self.size, self.center_y)
             painter.drawLine(self.center_x, self.center_y - self.size, self.center_x, self.center_y - gap)
             painter.drawLine(self.center_x, self.center_y + gap, self.center_x, self.center_y + self.size)
         if self.dot_visible and self.dot_radius > 0:
             outer_color = QtGui.QColor(self.dot_outer_color)
-            outer_color.setAlphaF(dot_alpha) # 決定した透明度を適用
+            outer_color.setAlphaF(dot_alpha)
+            # Glow around dot
+            grad = QtGui.QRadialGradient(self.center_x, self.center_y, self.dot_radius * 3)
+            c0 = QtGui.QColor(outer_color)
+            c0.setAlphaF(min(1.0, dot_alpha * 0.35))
+            c1 = QtGui.QColor(outer_color)
+            c1.setAlphaF(0.0)
+            grad.setColorAt(0.0, c0)
+            grad.setColorAt(1.0, c1)
+            painter.setBrush(QtGui.QBrush(grad))
+            painter.setPen(QtCore.Qt.NoPen)
+            painter.drawEllipse(QtCore.QRect(self.center_x - self.dot_radius * 3, self.center_y - self.dot_radius * 3, self.dot_radius * 6, self.dot_radius * 6))
+            # Main dot
             painter.setBrush(QtGui.QBrush(outer_color))
             painter.setPen(QtGui.QPen(outer_color))
             painter.drawEllipse(QtCore.QRect(self.center_x - self.dot_radius, self.center_y - self.dot_radius, self.dot_radius * 2, self.dot_radius * 2))
             if self.dot_radius > 1:
                 inner_r = self.dot_radius - 1
                 inner_color = QtGui.QColor(self.dot_inner_color)
-                inner_color.setAlphaF(dot_alpha) # 決定した透明度を適用
+                inner_color.setAlphaF(dot_alpha)
                 painter.setBrush(QtGui.QBrush(inner_color)); painter.setPen(QtGui.QPen(inner_color))
                 painter.drawEllipse(QtCore.QRect(self.center_x - inner_r, self.center_y - inner_r, inner_r * 2, inner_r * 2))
 
@@ -488,6 +584,7 @@ class CrosshairOverlay(QtWidgets.QWidget):
 
     def show_control_panel(self):
         self.panel = self.ControlPanel(self)
+        self.panel.setObjectName("ControlPanel")
         layout = QtWidgets.QVBoxLayout()
 
         # --- 環境設定メニュー ---
@@ -500,6 +597,7 @@ class CrosshairOverlay(QtWidgets.QWidget):
         preset_layout = QtWidgets.QHBoxLayout()
         self.preset_box = QtWidgets.QComboBox()
         self.save_btn = QtWidgets.QPushButton("現在の設定を保存")
+        self.save_btn.setIcon(self.panel.style().standardIcon(QtWidgets.QStyle.SP_DialogSaveButton))
         self.save_btn.clicked.connect(self.save_preset)
         preset_layout.addWidget(self.preset_box)
         preset_layout.addWidget(self.save_btn)
@@ -527,12 +625,12 @@ class CrosshairOverlay(QtWidgets.QWidget):
 
         def make_color_button(label_text, getter, setter, update_callback):
             layout_ = QtWidgets.QHBoxLayout(); button = QtWidgets.QPushButton(label_text)
-            square = QtWidgets.QLabel(); square.setFixedSize(20, 20)
+            square = QtWidgets.QLabel(); square.setFixedSize(20, 20); square.setProperty("colorSquare", True)
             def pick_color():
                 color = QtWidgets.QColorDialog.getColor(QtGui.QColor(getter()))
                 if color.isValid(): 
                     setter(color.name())
-                    square.setStyleSheet(f"background-color: {color.name()}; border: 1px solid black;")
+                    square.setStyleSheet(f"background-color: {color.name()};")
                     update_callback()
                     self._set_dirty_and_update_display()
             button.clicked.connect(pick_color)
@@ -560,11 +658,19 @@ class CrosshairOverlay(QtWidgets.QWidget):
         layout.addWidget(self.fade_on_shoot_checkbox)
 
         disable_layout = QtWidgets.QHBoxLayout(); disable_btn = QtWidgets.QPushButton("キーを無効化")
+        disable_btn.setIcon(self.panel.style().standardIcon(QtWidgets.QStyle.SP_MessageBoxWarning))
         self.disabled_keys_label = QtWidgets.QLabel(", ".join(self.disabled_keys) if self.disabled_keys else "なし"); self.disabled_keys_label.setWordWrap(True)
         disable_btn.clicked.connect(self.disable_key_gui); disable_layout.addWidget(disable_btn); disable_layout.addWidget(self.disabled_keys_label); layout.addLayout(disable_layout)
 
-        enable_btn = QtWidgets.QPushButton("キーを有効化"); enable_btn.clicked.connect(self.enable_key_gui); layout.addWidget(enable_btn)
-        enable_all_btn = QtWidgets.QPushButton("すべてのキーを有効化"); enable_all_btn.clicked.connect(self.enable_all_keys_gui); layout.addWidget(enable_all_btn)
+        enable_btn = QtWidgets.QPushButton("キーを有効化"); enable_btn.setIcon(self.panel.style().standardIcon(QtWidgets.QStyle.SP_DialogYesButton)); enable_btn.clicked.connect(self.enable_key_gui); layout.addWidget(enable_btn)
+        enable_all_btn = QtWidgets.QPushButton("すべてのキーを有効化"); enable_all_btn.setIcon(self.panel.style().standardIcon(QtWidgets.QStyle.SP_BrowserReload)); enable_all_btn.clicked.connect(self.enable_all_keys_gui); layout.addWidget(enable_all_btn)
+
+        # Apply shadow to panel
+        shadow = QtWidgets.QGraphicsDropShadowEffect(self.panel)
+        shadow.setBlurRadius(24)
+        shadow.setOffset(0, 8)
+        shadow.setColor(QtGui.QColor(0, 0, 0, 160))
+        self.panel.setGraphicsEffect(shadow)
 
         self.panel.setLayout(layout)
         
@@ -575,7 +681,15 @@ class CrosshairOverlay(QtWidgets.QWidget):
         self.load_presets()
         self.preset_box.currentIndexChanged.connect(self.load_selected_preset)
         
+        # Show with fade-in animation
+        self.panel.setWindowOpacity(0.0)
         self.panel.show()
+        fade_anim = QtCore.QPropertyAnimation(self.panel, b"windowOpacity", self.panel)
+        fade_anim.setDuration(220)
+        fade_anim.setStartValue(0.0)
+        fade_anim.setEndValue(1.0)
+        fade_anim.setEasingCurve(QtCore.QEasingCurve.OutCubic)
+        fade_anim.start(QtCore.QAbstractAnimation.DeleteWhenStopped)
 
     def update_control_panel_ui(self):
         # 現在のインスタンス変数に基づいてコントロールパネルのUIを更新する
@@ -593,9 +707,9 @@ class CrosshairOverlay(QtWidgets.QWidget):
         self.dot_slider.setValue(self.dot_radius * 2)
         self.dot_value.setText(str(self.dot_radius * 2))
         
-        self.ch_color_square.setStyleSheet(f"background-color: {self.crosshair_color}; border: 1px solid black;")
-        self.dot_out_color_square.setStyleSheet(f"background-color: {self.dot_outer_color}; border: 1px solid black;")
-        self.dot_in_color_square.setStyleSheet(f"background-color: {self.dot_inner_color}; border: 1px solid black;")
+        self.ch_color_square.setStyleSheet(f"background-color: {self.crosshair_color};")
+        self.dot_out_color_square.setStyleSheet(f"background-color: {self.dot_outer_color};")
+        self.dot_in_color_square.setStyleSheet(f"background-color: {self.dot_inner_color};")
         
         self.alpha_slider.setValue(int(self.crosshair_alpha * 100))
         self.alpha_value.setText(str(self.crosshair_alpha))
@@ -666,6 +780,13 @@ def gui_main():
     
     # この行を削除、またはTrueに設定します
     app.setQuitOnLastWindowClosed(True)
+    
+    # Apply modern style (Fusion + custom QSS)
+    try:
+        app.setStyle("Fusion")
+    except Exception:
+        pass
+    app.setStyleSheet(build_modern_stylesheet())
     
     overlay = CrosshairOverlay()
     overlay.show_control_panel()
