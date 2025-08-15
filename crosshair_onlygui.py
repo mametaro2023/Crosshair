@@ -11,6 +11,68 @@ CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".crosshair_config.json")
 DEFAULT_PRESET_FOLDER = os.path.join(os.path.expanduser("~"), "Documents", "CrosshairPresets")
 PRESET_EXTENSION = ".mametaro"
 
+# --- Dark Theme Helpers -------------------------------------------------------
+
+def apply_dark_theme(app: QtWidgets.QApplication) -> None:
+    app.setStyle("Fusion")
+
+    palette = QtGui.QPalette()
+    palette.setColor(QtGui.QPalette.Window, QtGui.QColor(24, 26, 27))
+    palette.setColor(QtGui.QPalette.WindowText, QtGui.QColor(224, 224, 224))
+    palette.setColor(QtGui.QPalette.Base, QtGui.QColor(32, 34, 37))
+    palette.setColor(QtGui.QPalette.AlternateBase, QtGui.QColor(44, 47, 51))
+    palette.setColor(QtGui.QPalette.ToolTipBase, QtGui.QColor(45, 47, 54))
+    palette.setColor(QtGui.QPalette.ToolTipText, QtGui.QColor(224, 224, 224))
+    palette.setColor(QtGui.QPalette.Text, QtGui.QColor(224, 224, 224))
+    palette.setColor(QtGui.QPalette.Button, QtGui.QColor(45, 47, 54))
+    palette.setColor(QtGui.QPalette.ButtonText, QtGui.QColor(224, 224, 224))
+    palette.setColor(QtGui.QPalette.BrightText, QtGui.QColor(255, 0, 0))
+    palette.setColor(QtGui.QPalette.Highlight, QtGui.QColor(0, 204, 102))
+    palette.setColor(QtGui.QPalette.HighlightedText, QtGui.QColor(12, 12, 12))
+    palette.setColor(QtGui.QPalette.Link, QtGui.QColor(0, 204, 204))
+    app.setPalette(palette)
+
+    # Global stylesheet for a sleek dark look
+    app.setStyleSheet(
+        """
+        QWidget { color: #E0E0E0; font-family: 'Noto Sans JP', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; }
+        QDialog { background-color: #181A1B; }
+        QMenuBar { background-color: #181A1B; color: #E0E0E0; border-bottom: 1px solid #2C2F33; }
+        QMenuBar::item { spacing: 6px; padding: 6px 10px; background: transparent; }
+        QMenuBar::item:selected { background: #2C2F33; border-radius: 4px; }
+        QMenu { background-color: #202225; color: #E0E0E0; border: 1px solid #2C2F33; }
+        QMenu::item { padding: 6px 16px; }
+        QMenu::item:selected { background: #2C2F33; }
+
+        QPushButton { background-color: #2D2F36; border: 1px solid #3C4048; padding: 8px 12px; border-radius: 6px; color: #E0E0E0; }
+        QPushButton:hover { background-color: #3A3F47; }
+        QPushButton:pressed { background-color: #2A2E36; }
+        QPushButton[accent="true"] { background-color: #00b35a; border: 1px solid #1fd47b; color: #0b0b0b; }
+        QPushButton[accent="true"]:hover { background-color: #00cc66; }
+        QPushButton[accent="true"]:pressed { background-color: #00a34d; }
+
+        QComboBox { background-color: #2D2F36; border: 1px solid #3C4048; border-radius: 6px; padding: 6px 10px; }
+        QComboBox QAbstractItemView { background-color: #202225; color: #E0E0E0; selection-background-color: #2C2F33; }
+
+        QLabel { color: #E0E0E0; }
+
+        QSlider::groove:horizontal { height: 6px; background: #3C4048; border-radius: 3px; }
+        QSlider::handle:horizontal { background: #00FF66; width: 14px; height: 14px; margin: -5px 0; border-radius: 7px; }
+
+        QCheckBox { spacing: 8px; }
+        QCheckBox::indicator { width: 18px; height: 18px; }
+        QCheckBox::indicator:unchecked { border: 1px solid #3C4048; background: #2D2F36; border-radius: 4px; }
+        QCheckBox::indicator:checked { border: 1px solid #00cc55; background: #00FF66; border-radius: 4px; }
+
+        QFrame#SeparatorLine { background-color: #3C4048; max-height: 1px; min-height: 1px; }
+
+        QToolTip { background-color: #2D2F36; color: #E0E0E0; border: 1px solid #3C4048; }
+        """
+    )
+
+# -----------------------------------------------------------------------------
+
+
 def load_config():
     defaults = {
         "crosshair_visible": True,
@@ -176,6 +238,7 @@ class CrosshairOverlay(QtWidgets.QWidget):
         super().__init__()
         self.UNSAVED_PRESET_TEXT = "--- 新しいプリセット ---"
         self.is_dirty = False
+        self._panel_animations = []
         
 
         self.setWindowFlags(
@@ -488,6 +551,18 @@ class CrosshairOverlay(QtWidgets.QWidget):
 
     def show_control_panel(self):
         self.panel = self.ControlPanel(self)
+        self.panel.setObjectName("controlPanel")
+        self.panel.setAttribute(QtCore.Qt.WA_StyledBackground, True)
+        # Card-like background to distinguish from desktop
+        self.panel.setStyleSheet("#controlPanel { background-color: #181A1B; border: 1px solid #2C2F33; }")
+
+        # Subtle drop shadow for depth
+        shadow = QtWidgets.QGraphicsDropShadowEffect(self.panel)
+        shadow.setBlurRadius(24)
+        shadow.setColor(QtGui.QColor(0, 0, 0, 160))
+        shadow.setOffset(0, 12)
+        self.panel.setGraphicsEffect(shadow)
+
         layout = QtWidgets.QVBoxLayout()
 
         # --- 環境設定メニュー ---
@@ -500,6 +575,7 @@ class CrosshairOverlay(QtWidgets.QWidget):
         preset_layout = QtWidgets.QHBoxLayout()
         self.preset_box = QtWidgets.QComboBox()
         self.save_btn = QtWidgets.QPushButton("現在の設定を保存")
+        self.save_btn.setProperty("accent", True)
         self.save_btn.clicked.connect(self.save_preset)
         preset_layout.addWidget(self.preset_box)
         preset_layout.addWidget(self.save_btn)
@@ -507,6 +583,7 @@ class CrosshairOverlay(QtWidgets.QWidget):
 
         # 水平線を追加
         line = QtWidgets.QFrame()
+        line.setObjectName("SeparatorLine")
         line.setFrameShape(QtWidgets.QFrame.HLine)
         line.setFrameShadow(QtWidgets.QFrame.Sunken)
         layout.addWidget(line)
@@ -532,7 +609,7 @@ class CrosshairOverlay(QtWidgets.QWidget):
                 color = QtWidgets.QColorDialog.getColor(QtGui.QColor(getter()))
                 if color.isValid(): 
                     setter(color.name())
-                    square.setStyleSheet(f"background-color: {color.name()}; border: 1px solid black;")
+                    square.setStyleSheet(f"background-color: {color.name()}; border: 1px solid #3C4048; border-radius: 4px;")
                     update_callback()
                     self._set_dirty_and_update_display()
             button.clicked.connect(pick_color)
@@ -576,6 +653,61 @@ class CrosshairOverlay(QtWidgets.QWidget):
         self.preset_box.currentIndexChanged.connect(self.load_selected_preset)
         
         self.panel.show()
+        # Subtle entrance animations
+        self.panel.setWindowOpacity(0.0)
+        self.animate_panel_show()
+        # One-time pulse to hint "保存" action
+        self._pulse_once(self.save_btn, QtGui.QColor("#00FF66"))
+
+    def animate_panel_show(self) -> None:
+        if not hasattr(self, "panel"):
+            return
+        # Fade in
+        fade = QtCore.QPropertyAnimation(self.panel, b"windowOpacity")
+        fade.setDuration(300)
+        fade.setStartValue(0.0)
+        fade.setEndValue(1.0)
+        fade.setEasingCurve(QtCore.QEasingCurve.InOutQuad)
+
+        # Slight slide for polish
+        end_geo = self.panel.geometry()
+        start_geo = QtCore.QRect(end_geo.x(), end_geo.y() - 20, end_geo.width(), end_geo.height())
+        slide = QtCore.QPropertyAnimation(self.panel, b"geometry")
+        slide.setDuration(350)
+        slide.setStartValue(start_geo)
+        slide.setEndValue(end_geo)
+        slide.setEasingCurve(QtCore.QEasingCurve.OutCubic)
+
+        group = QtCore.QParallelAnimationGroup(self.panel)
+        group.addAnimation(fade)
+        group.addAnimation(slide)
+        group.start(QtCore.QAbstractAnimation.DeleteWhenStopped)
+        self._panel_animations.append(group)
+
+    def _pulse_once(self, widget: QtWidgets.QWidget, color: QtGui.QColor) -> None:
+        effect = QtWidgets.QGraphicsDropShadowEffect(widget)
+        effect.setColor(color)
+        effect.setOffset(0, 0)
+        effect.setBlurRadius(0)
+        widget.setGraphicsEffect(effect)
+
+        up = QtCore.QPropertyAnimation(effect, b"blurRadius")
+        up.setDuration(500)
+        up.setStartValue(0)
+        up.setEndValue(24)
+        up.setEasingCurve(QtCore.QEasingCurve.OutCubic)
+
+        down = QtCore.QPropertyAnimation(effect, b"blurRadius")
+        down.setDuration(500)
+        down.setStartValue(24)
+        down.setEndValue(0)
+        down.setEasingCurve(QtCore.QEasingCurve.InCubic)
+
+        seq = QtCore.QSequentialAnimationGroup(widget)
+        seq.addAnimation(up)
+        seq.addAnimation(down)
+        seq.start(QtCore.QAbstractAnimation.DeleteWhenStopped)
+        self._panel_animations.append(seq)
 
     def update_control_panel_ui(self):
         # 現在のインスタンス変数に基づいてコントロールパネルのUIを更新する
@@ -593,9 +725,9 @@ class CrosshairOverlay(QtWidgets.QWidget):
         self.dot_slider.setValue(self.dot_radius * 2)
         self.dot_value.setText(str(self.dot_radius * 2))
         
-        self.ch_color_square.setStyleSheet(f"background-color: {self.crosshair_color}; border: 1px solid black;")
-        self.dot_out_color_square.setStyleSheet(f"background-color: {self.dot_outer_color}; border: 1px solid black;")
-        self.dot_in_color_square.setStyleSheet(f"background-color: {self.dot_inner_color}; border: 1px solid black;")
+        self.ch_color_square.setStyleSheet(f"background-color: {self.crosshair_color}; border: 1px solid #3C4048; border-radius: 4px;")
+        self.dot_out_color_square.setStyleSheet(f"background-color: {self.dot_outer_color}; border: 1px solid #3C4048; border-radius: 4px;")
+        self.dot_in_color_square.setStyleSheet(f"background-color: {self.dot_inner_color}; border: 1px solid #3C4048; border-radius: 4px;")
         
         self.alpha_slider.setValue(int(self.crosshair_alpha * 100))
         self.alpha_value.setText(str(self.crosshair_alpha))
@@ -666,6 +798,9 @@ def gui_main():
     
     # この行を削除、またはTrueに設定します
     app.setQuitOnLastWindowClosed(True)
+
+    # Apply sleek dark theme to the control panel and dialogs
+    apply_dark_theme(app)
     
     overlay = CrosshairOverlay()
     overlay.show_control_panel()
