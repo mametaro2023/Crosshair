@@ -1,11 +1,14 @@
 import sys
 import threading
-import queue
 import json
 import os
 import keyboard
 from pynput import mouse
 from PyQt5 import QtCore, QtGui, QtWidgets
+try:
+    import psutil
+except ImportError:
+    psutil = None
 # OS固有の機能のために、OSを判定する
 try:
     # Windowsレジストリを操作するためのライブラリ
@@ -17,6 +20,7 @@ except ImportError:
 
 # スタートアップ登録時に使用するアプリケーション名
 APP_NAME = "CrosshairOverlay"
+GAME_PROCESS_NAME = "r5apex_dx12.exe"
 
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".crosshair_config.json")
 DEFAULT_PRESET_FOLDER = os.path.join(os.path.expanduser("~"), "Documents", "CrosshairPresets")
@@ -113,7 +117,8 @@ def load_config():
         "dot_alpha": 1.0,
         "fade_on_shoot": False,
         "last_selected": "デフォルト設定",
-        "preset_folder": DEFAULT_PRESET_FOLDER
+        "preset_folder": DEFAULT_PRESET_FOLDER,
+        "monitor_apex": False
     }
     
     if not os.path.exists(CONFIG_FILE):
@@ -233,6 +238,46 @@ def is_in_startup(app_name):
         return False
     except Exception:
         return False
+
+
+class GameMonitorThread(QtCore.QThread):
+    gameRunning = QtCore.pyqtSignal(bool)
+
+    def __init__(self, process_name, parent=None):
+        super().__init__(parent)
+        self.process_name = process_name
+        self.is_running = True
+        self._game_is_running = False
+
+    def run(self):
+        if not psutil:
+            print("psutilライブラリが見つかりません。ゲーム監視機能は無効です。")
+            return
+
+        # 最初の状態を確認して、必要なら即時通知
+        try:
+            initial_state = any(proc.info['name'] == self.process_name for proc in psutil.process_iter(['name']))
+            if initial_state != self._game_is_running:
+                self._game_is_running = initial_state
+                self.gameRunning.emit(initial_state)
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            # プロセスが早く消えたり、アクセス権がなくてもクラッシュしないようにする
+            pass
+
+
+        while self.is_running:
+            self.sleep(5) # 5秒待機
+            try:
+                found = any(proc.info['name'] == self.process_name for proc in psutil.process_iter(['name']))
+                
+                if found != self._game_is_running:
+                    self._game_is_running = found
+                    self.gameRunning.emit(found)
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                pass
+
+    def stop(self):
+        self.is_running = False
     
 
 class SettingsDialog(QtWidgets.QDialog):
@@ -323,6 +368,7 @@ class CrosshairOverlay(QtWidgets.QWidget):
         self.is_dirty = False
         self._panel_animations = []
         self.master_enabled = True # オーバーレイ全体の有効/無効フラグ
+        self.game_monitor_thread = None
 
         self.setWindowFlags(
             QtCore.Qt.FramelessWindowHint |
@@ -340,7 +386,7 @@ class CrosshairOverlay(QtWidgets.QWidget):
         # マウスリスナーを別スレッドで開始
         # daemon=Trueにすることで、メインプログラム終了時にスレッドも自動で終了させます
         self.mouse_listener_thread = threading.Thread(target=self._mouse_listener, daemon=True)
-        self.mouse_listener_thread.start()
+        self.mouse_listener_thread.start() 
     
         self.showFullScreen()
 
@@ -350,6 +396,7 @@ class CrosshairOverlay(QtWidgets.QWidget):
         self.size = 20
 
         config = load_config()
+        self.monitor_apex = config.get("monitor_apex", False)
 
         # --- プリセット関連のプロパティを初期化 ---
         self.preset_folder = config.get("preset_folder", DEFAULT_PRESET_FOLDER)
@@ -359,6 +406,7 @@ class CrosshairOverlay(QtWidgets.QWidget):
             "crosshair_color": "#00FF66", "dot_outer_color": "#FFFFFF",
             "dot_inner_color": "#000000", "disabled_keys": [],
             "crosshair_alpha": 1.0, "dot_alpha": 1.0,
+            "crosshair_shape": "十字", # ★形状のデフォルト値
         }
         self.last_selected_preset = config.get("last_selected", "デフォルト設定")
         self.presets = {"デフォルト設定": self.default_config}
@@ -366,7 +414,7 @@ class CrosshairOverlay(QtWidgets.QWidget):
         # 設定値を適用
         self.apply_config(self.get_current_preset_config())
 
-        self.disabled_keys = config["disabled_keys"]
+        self.disabled_keys = config.get("disabled_keys", [])
         for k in self.disabled_keys:
             try: keyboard.block_key(k)
             except Exception as e: print(f"キー {k} の無効化に失敗: {e}")
@@ -382,7 +430,10 @@ class CrosshairOverlay(QtWidgets.QWidget):
                 preset_folder = config.get("preset_folder", DEFAULT_PRESET_FOLDER)
                 
                 if preset_name == "デフォルト設定":
-                    return self.default_config
+                    # ★デフォルト設定にも形状を追加
+                    default_with_shape = self.default_config.copy()
+                    default_with_shape["crosshair_shape"] = "十字"
+                    return default_with_shape
 
                 preset_file = os.path.join(preset_folder, preset_name + PRESET_EXTENSION)
                 if os.path.exists(preset_file):
@@ -404,6 +455,7 @@ class CrosshairOverlay(QtWidgets.QWidget):
         self.crosshair_alpha = config.get("crosshair_alpha", 1.0)
         self.dot_alpha = config.get("dot_alpha", 1.0)
         self.fade_on_shoot_enabled = config.get("fade_on_shoot", False) 
+        self.crosshair_shape = config.get("crosshair_shape", "十字") # ★形状を適用
         # disabled_keys は直接適用せず、起動時のみ読み込む
         self.update() # GUIを再描画
 
@@ -459,7 +511,7 @@ class CrosshairOverlay(QtWidgets.QWidget):
                     json.dump(self.get_config(), f, indent=4)
                 
                 self.last_selected_preset = os.path.splitext(os.path.basename(path))[0]
-                self.save_last_selected_preset()
+                self.save_global_config()
                 self.load_presets()
                 self.is_dirty = False
                 return True # 保存成功
@@ -478,7 +530,7 @@ class CrosshairOverlay(QtWidgets.QWidget):
         self.apply_config(config_to_load)
         
         self.last_selected_preset = name
-        self.save_last_selected_preset()
+        self.save_global_config()
         print(f"プリセット {name} を読み込みました")
         
         # コントロールパネルのUIに設定を反映
@@ -493,17 +545,21 @@ class CrosshairOverlay(QtWidgets.QWidget):
             if new_path:
                 self.preset_folder = new_path
                 os.makedirs(self.preset_folder, exist_ok=True)
-                self.save_last_selected_preset() # フォルダの変更も保存
+                self.save_global_config() # フォルダの変更も保存
                 self.load_presets()
 
-    def save_last_selected_preset(self):
-        config = {"last_selected": self.last_selected_preset, "preset_folder": self.preset_folder}
+    def save_global_config(self):
+        config = {
+            "last_selected": self.last_selected_preset, 
+            "preset_folder": self.preset_folder,
+            "monitor_apex": self.monitor_apex
+        }
         # 他の設定はメインのconfigファイルには保存しない
         try:
             with open(CONFIG_FILE, "w", encoding="utf-8") as f:
                 json.dump(config, f, indent=4)
-        except:
-            pass
+        except Exception as e:
+            print(f"グローバル設定の保存に失敗: {e}")
     
     # --- 移植メソッド群ここまで ---
 
@@ -580,6 +636,7 @@ class CrosshairOverlay(QtWidgets.QWidget):
             "crosshair_alpha": self.crosshair_alpha,
             "dot_alpha": self.dot_alpha,
             "fade_on_shoot": self.fade_on_shoot_enabled,
+            "crosshair_shape": self.crosshair_shape, # ★形状を保存
         }
 
     def paintEvent(self, event):
@@ -599,14 +656,35 @@ class CrosshairOverlay(QtWidgets.QWidget):
 
         if self.crosshair_visible:
             color = QtGui.QColor(self.crosshair_color)
-            color.setAlphaF(ch_alpha)  # 決定した透明度を適用
+            color.setAlphaF(ch_alpha)
             pen = QtGui.QPen(color, 2)
             painter.setPen(pen)
-            gap = 10
-            painter.drawLine(self.center_x - self.size, self.center_y, self.center_x - gap, self.center_y)
-            painter.drawLine(self.center_x + gap, self.center_y, self.center_x + self.size, self.center_y)
-            painter.drawLine(self.center_x, self.center_y - self.size, self.center_x, self.center_y - gap)
-            painter.drawLine(self.center_x, self.center_y + gap, self.center_x, self.center_y + self.size)
+            
+            # ★形状に応じて描画処理を分岐
+            shape = self.crosshair_shape
+            if shape == "十字":
+                gap = 10
+                painter.drawLine(self.center_x - self.size, self.center_y, self.center_x - gap, self.center_y)
+                painter.drawLine(self.center_x + gap, self.center_y, self.center_x + self.size, self.center_y)
+                painter.drawLine(self.center_x, self.center_y - self.size, self.center_x, self.center_y - gap)
+                painter.drawLine(self.center_x, self.center_y + gap, self.center_x, self.center_y + self.size)
+            elif shape == "十字 (ギャップなし)":
+                painter.drawLine(self.center_x - self.size, self.center_y, self.center_x + self.size, self.center_y)
+                painter.drawLine(self.center_x, self.center_y - self.size, self.center_x, self.center_y + self.size)
+            elif shape == "円":
+                painter.setBrush(QtCore.Qt.NoBrush) # 中身は塗りつぶさない
+                rect = QtCore.QRect(self.center_x - self.size, self.center_y - self.size, self.size * 2, self.size * 2)
+                painter.drawEllipse(rect)
+            elif shape == "矢印 (シェブロン)":
+                arrow_size = self.size // 2
+                points = [
+                    QtCore.QPoint(self.center_x - arrow_size, self.center_y + arrow_size),
+                    QtCore.QPoint(self.center_x, self.center_y),
+                    QtCore.QPoint(self.center_x + arrow_size, self.center_y + arrow_size)
+                ]
+                painter.drawPolyline(QtGui.QPolygon(points))
+
+
         if self.dot_visible and self.dot_radius > 0:
             outer_color = QtGui.QColor(self.dot_outer_color)
             outer_color.setAlphaF(dot_alpha) # 決定した透明度を適用
@@ -673,6 +751,21 @@ class CrosshairOverlay(QtWidgets.QWidget):
             self.startup_action.setToolTip("この機能はWindowsでのみ利用可能です。")
         
         settings_menu.addAction(self.startup_action)
+
+        settings_menu.addSeparator()
+
+        self.apex_monitor_action = QtWidgets.QAction("Apex Legendsを監視して自動切替", self.panel, checkable=True)
+        self.apex_monitor_action.setToolTip("Apex Legendsの起動・終了に合わせてオーバーレイのON/OFFを自動で切り替えます。")
+
+        if psutil:
+            self.apex_monitor_action.setChecked(self.monitor_apex)
+            self.apex_monitor_action.triggered.connect(self.toggle_apex_monitoring)
+        else:
+            self.apex_monitor_action.setEnabled(False)
+            self.apex_monitor_action.setToolTip("この機能を利用するには 'psutil' ライブラリが必要です。(pip install psutil)")
+        
+        settings_menu.addAction(self.apex_monitor_action)
+
         layout.setMenuBar(menu_bar)
 
         # 1. マスター ON/OFF ボタンを作成
@@ -718,6 +811,17 @@ class CrosshairOverlay(QtWidgets.QWidget):
         self.crosshair_btn.clicked.connect(self.toggle_crosshair_button)
         h1 = QtWidgets.QHBoxLayout(); h1.addWidget(self.crosshair_btn); h1.addWidget(self.crosshair_state); layout.addLayout(h1)
         self.detail_controls.extend([self.crosshair_btn, self.crosshair_state]) # リストに追加        
+
+        # ★形状選択UIを追加
+        shape_layout = QtWidgets.QHBoxLayout()
+        shape_label = QtWidgets.QLabel("クロスヘア形状")
+        self.shape_box = QtWidgets.QComboBox()
+        self.shape_box.addItems(["十字", "十字 (ギャップなし)", "円", "矢印 (シェブロン)"])
+        self.shape_box.currentTextChanged.connect(self.update_crosshair_shape)
+        shape_layout.addWidget(shape_label)
+        shape_layout.addWidget(self.shape_box)
+        layout.addLayout(shape_layout)
+        self.detail_controls.extend([shape_label, self.shape_box])
 
         self.dot_btn = QtWidgets.QPushButton("ドット表示/非表示"); self.dot_state = QtWidgets.QLabel()
         self.dot_btn.clicked.connect(self.toggle_dot_button)
@@ -792,40 +896,64 @@ class CrosshairOverlay(QtWidgets.QWidget):
         self.preset_box.currentIndexChanged.connect(self.load_selected_preset)
         
         self.panel.show()
+
+        # もし起動時に監視が有効なら、監視を開始する
+        if self.monitor_apex and psutil:
+            self.toggle_apex_monitoring(True)
+
         # Subtle entrance animations
         self.panel.setWindowOpacity(0.0)
         self.animate_panel_show()
         # One-time pulse to hint "保存" action
         self._pulse_once(self.save_btn, QtGui.QColor("#00FF66"))
 
-    def toggle_master_visibility(self):
-        """マスターボタンでオーバーレイ全体の有効/無効を切り替える"""
-        self.master_enabled = not self.master_enabled
+    def set_master_enabled(self, enabled):
+        """オーバーレイ全体の有効/無効をプログラムで設定する"""
+        if self.master_enabled == enabled:
+            return # 状態が同じなら何もしない
+
+        self.master_enabled = enabled
 
         # 詳細設定ウィジェットの有効/無効を切り替える
-        for widget in self.detail_controls:
-            widget.setEnabled(self.master_enabled)
+        if hasattr(self, 'detail_controls'):
+            for widget in self.detail_controls:
+                widget.setEnabled(self.master_enabled)
 
         # ボタンの外観とテキストを更新する
-        if self.master_enabled:
-            self.master_toggle_btn.setText("オーバーレイを無効化")
-            icon = self.style().standardIcon(QtWidgets.QStyle.SP_DialogCancelButton)
-            self.master_toggle_btn.setIcon(icon)
-            # スタイルを「無効化用(赤)」に戻す
-            self.master_toggle_btn.setObjectName("masterToggleButton")
-        else:
-            self.master_toggle_btn.setText("オーバーレイを有効化")
-            icon = self.style().standardIcon(QtWidgets.QStyle.SP_DialogApplyButton)
-            self.master_toggle_btn.setIcon(icon)
-            # スタイルを「有効化用(緑)」に変更する
-            self.master_toggle_btn.setObjectName("masterToggleButtonActive")
-        
-        # setObjectNameで変更したスタイルを即時反映させるおまじない
-        self.master_toggle_btn.style().unpolish(self.master_toggle_btn)
-        self.master_toggle_btn.style().polish(self.master_toggle_btn)
+        if hasattr(self, 'master_toggle_btn'):
+            if self.master_enabled:
+                self.master_toggle_btn.setText("オーバーレイを無効化")
+                icon = self.style().standardIcon(QtWidgets.QStyle.SP_DialogCancelButton)
+                self.master_toggle_btn.setIcon(icon)
+                self.master_toggle_btn.setObjectName("masterToggleButton")
+            else:
+                self.master_toggle_btn.setText("オーバーレイを有効化")
+                icon = self.style().standardIcon(QtWidgets.QStyle.SP_DialogApplyButton)
+                self.master_toggle_btn.setIcon(icon)
+                self.master_toggle_btn.setObjectName("masterToggleButtonActive")
+            
+            self.master_toggle_btn.style().unpolish(self.master_toggle_btn)
+            self.master_toggle_btn.style().polish(self.master_toggle_btn)
 
         # オーバーレイの再描画をトリガー
-        self.update()    
+        self.update()
+
+    def toggle_master_visibility(self):
+        """マスターボタンでオーバーレイ全体の有効/無効を切り替える"""
+        # 自動監視が有効な場合は、手動操作を許可しないか、あるいは監視をオフにするか
+        # ここでは、手動操作が自動設定を上書きし、監視をオフにする仕様とする
+        if self.monitor_apex and hasattr(self, 'apex_monitor_action'):
+            reply = QtWidgets.QMessageBox.question(
+                self.panel, "確認",
+                "手動で操作するとApex Legendsの自動監視はオフになります。よろしいですか？",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+            )
+            if reply == QtWidgets.QMessageBox.Yes:
+                self.apex_monitor_action.setChecked(False) # これが toggle_apex_monitoring をトリガーする
+            else:
+                return # 操作をキャンセル
+
+        self.set_master_enabled(not self.master_enabled)    
         
 
     def toggle_startup(self, checked):
@@ -845,6 +973,38 @@ class CrosshairOverlay(QtWidgets.QWidget):
             else:
                 QtWidgets.QMessageBox.warning(self.panel, "設定失敗", "スタートアップからの登録解除に失敗しました。")
                 self.startup_action.setChecked(True) # 失敗したのでチェックを元に戻す    
+
+    @QtCore.pyqtSlot(bool)
+    def on_game_state_changed(self, is_running):
+        """ゲームの実行状態が変わったときに呼ばれるスロット"""
+        print(f"ゲーム状態の変更を検知: {'実行中' if is_running else '終了'}")
+        if self.monitor_apex:
+            self.set_master_enabled(is_running)
+
+    def toggle_apex_monitoring(self, checked):
+        """Apex Legendsの監視を開始/停止する"""
+        self.monitor_apex = checked
+        self.save_global_config()
+
+        if checked:
+            if not psutil:
+                QtWidgets.QMessageBox.warning(self.panel, "ライブラリ不足", "この機能を利用するには 'psutil' が必要です。コマンドプロンプトで 'pip install psutil' を実行してください。")
+                if hasattr(self, 'apex_monitor_action'):
+                    self.apex_monitor_action.setChecked(False)
+                return
+
+            if self.game_monitor_thread is None:
+                self.game_monitor_thread = GameMonitorThread(GAME_PROCESS_NAME, self)
+                self.game_monitor_thread.gameRunning.connect(self.on_game_state_changed)
+                self.game_monitor_thread.start()
+                print("Apex Legendsの監視を開始しました。")
+        else:
+            if self.game_monitor_thread is not None:
+                self.game_monitor_thread.stop()
+                self.game_monitor_thread.quit()
+                self.game_monitor_thread.wait()
+                self.game_monitor_thread = None
+                print("Apex Legendsの監視を停止しました。")
 
     def animate_panel_show(self) -> None:
         if not hasattr(self, "panel"):
@@ -901,15 +1061,18 @@ class CrosshairOverlay(QtWidgets.QWidget):
         # 現在のインスタンス変数に基づいてコントロールパネルのUIを更新する
 
         # --- 値を設定する間、一時的にシグナルをブロック ---
+        self.shape_box.blockSignals(True) # ★追加
         self.dot_slider.blockSignals(True)
         self.alpha_slider.blockSignals(True)
         self.dot_alpha_slider.blockSignals(True)
         self.fade_on_shoot_checkbox.blockSignals(True)
-        # -----------------------------------------------
+        # -------------------------------- תח
 
         self.crosshair_state.setText("ON" if self.crosshair_visible else "OFF")
         self.dot_state.setText("ON" if self.dot_visible else "OFF")
         
+        self.shape_box.setCurrentText(self.crosshair_shape) # ★追加
+
         self.dot_slider.setValue(self.dot_radius * 2)
         self.dot_value.setText(str(self.dot_radius * 2))
         
@@ -928,6 +1091,7 @@ class CrosshairOverlay(QtWidgets.QWidget):
         self.disabled_keys_label.setText(", ".join(self.disabled_keys) if self.disabled_keys else "なし")
 
         # --- 値の設定が終わったら、シグナルのブロックを解除 ---
+        self.shape_box.blockSignals(False) # ★追加
         self.dot_slider.blockSignals(False)
         self.alpha_slider.blockSignals(False)
         self.dot_alpha_slider.blockSignals(False)
@@ -937,6 +1101,11 @@ class CrosshairOverlay(QtWidgets.QWidget):
     def toggle_crosshair_button(self): 
         self.crosshair_visible = not self.crosshair_visible
         self.crosshair_state.setText("ON" if self.crosshair_visible else "OFF")
+        self.update()
+        self._set_dirty_and_update_display()
+    def update_crosshair_shape(self, shape_text):
+        """クロスヘア形状の選択が変更されたときに呼ばれる"""
+        self.crosshair_shape = shape_text
         self.update()
         self._set_dirty_and_update_display()
     def toggle_dot_button(self): self.dot_visible = not self.dot_visible; self.dot_state.setText("ON" if self.dot_visible else "OFF"); self.update(); self._set_dirty_and_update_display()
@@ -995,7 +1164,7 @@ def gui_main():
 
     app.aboutToQuit.connect(lambda: [
         # 終了時に config (フォルダパスなど) を保存し、キーを全て有効化
-        overlay.save_last_selected_preset(),
+        overlay.save_global_config(),
         overlay.enable_all_keys()
     ])
     overlay.show()
