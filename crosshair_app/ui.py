@@ -6,14 +6,14 @@ import keyboard
 from . import utils
 from . import config
 
-# This function was already here
+
 def apply_dark_theme(app: QtWidgets.QApplication) -> None:
     app.setStyle("Fusion")
 
     palette = QtGui.QPalette()
-    palette.setColor(QtGui.QPalette.Window, QtGui.QColor(24, 26, 27))
+    palette.setColor(QtGui.QPalette.Window, QtGui.QColor(37, 41, 45))
     palette.setColor(QtGui.QPalette.WindowText, QtGui.QColor(224, 224, 224))
-    palette.setColor(QtGui.QPalette.Base, QtGui.QColor(32, 34, 37))
+    palette.setColor(QtGui.QPalette.Base, QtGui.QColor(28, 31, 34))
     palette.setColor(QtGui.QPalette.AlternateBase, QtGui.QColor(44, 47, 51))
     palette.setColor(QtGui.QPalette.ToolTipBase, QtGui.QColor(45, 47, 54))
     palette.setColor(QtGui.QPalette.ToolTipText, QtGui.QColor(224, 224, 224))
@@ -21,26 +21,64 @@ def apply_dark_theme(app: QtWidgets.QApplication) -> None:
     palette.setColor(QtGui.QPalette.Button, QtGui.QColor(45, 47, 54))
     palette.setColor(QtGui.QPalette.ButtonText, QtGui.QColor(224, 224, 224))
     palette.setColor(QtGui.QPalette.BrightText, QtGui.QColor(255, 0, 0))
-    palette.setColor(QtGui.QPalette.Highlight, QtGui.QColor(0, 204, 102))
-    palette.setColor(QtGui.QPalette.HighlightedText, QtGui.QColor(12, 12, 12))
-    palette.setColor(QtGui.QPalette.Link, QtGui.QColor(0, 204, 204))
+    palette.setColor(QtGui.QPalette.Highlight, QtGui.QColor(0, 120, 215))
+    palette.setColor(QtGui.QPalette.HighlightedText, QtGui.QColor(255, 255, 255))
+    palette.setColor(QtGui.QPalette.Link, QtGui.QColor(0, 170, 255))
     app.setPalette(palette)
 
     app.setStyleSheet(
         """
-        QWidget { color: #E0E0E0; font-family: 'Noto Sans JP', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; }
-        QDialog { background-color: #181A1B; }
-        QMenuBar { background-color: #181A1B; color: #E0E0E0; border-bottom: 1px solid #2C2F33; }
-        QMenuBar::item { spacing: 6px; padding: 6px 10px; background: transparent; }
-        QMenuBar::item:selected { background: #2C2F33; border-radius: 4px; }
-        QMenu { background-color: #202225; color: #E0E0E0; border: 1px solid #2C2F33; }
-        QMenu::item { padding: 6px 16px; }
-        QMenu::item:selected { background: #2C2F33; }
+        QWidget {
+            color: #e0e0e0;
+            font-family: 'Noto Sans JP', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            font-size: 10pt;
+        }
+        QDialog, QMenuBar, QMenu {
+            background-color: #25292d;
+        }
+        QMenuBar {
+            border-bottom: 1px solid #3c4048;
+        }
+        QMenu::item:selected {
+            background-color: #0078d7;
+        }
 
-        QPushButton { background-color: #40454c; border: 1px solid #50555c; padding: 8px 12px; border-radius: 6px; color: #E0E0E0; }
-        QPushButton:hover { background-color: #4a4f57; }
-        QPushButton:pressed { background-color: #2a2e36; }
-        QPushButton[accent="true"] { background-color: #0078d7; border: 1px solid #0088f7; color: #ffffff; font-weight: bold; }
+        QGroupBox {
+            background-color: rgba(44, 49, 53, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            margin-top: 10px;
+            padding: 10px 5px 5px 5px;
+        }
+        QGroupBox::title {
+            subcontrol-origin: margin;
+            subcontrol-position: top left;
+            padding: 0 10px;
+            left: 10px;
+            color: #00aaff;
+            font-weight: bold;
+        }
+
+        QPushButton {
+            background-color: #40454c;
+            border: 1px solid #50555c;
+            padding: 8px 12px;
+            border-radius: 4px;
+            color: #e0e0e0;
+        }
+        QPushButton:hover {
+            background-color: #4a4f57;
+            border-color: #5a5f67;
+        }
+        QPushButton:pressed {
+            background-color: #2a2e36;
+        }
+        QPushButton[accent="true"] {
+            background-color: #0078d7;
+            border: 1px solid #0088f7;
+            color: #ffffff;
+            font-weight: bold;
+        }
         QPushButton[accent="true"]:hover { background-color: #0088f7; }
         QPushButton[accent="true"]:pressed { background-color: #0068c7; }
 
@@ -60,23 +98,45 @@ def apply_dark_theme(app: QtWidgets.QApplication) -> None:
         }
         QPushButton#masterToggleButtonActive:hover { background-color: #2ecc71; }
 
-        QComboBox { background-color: #40454c; border: 1px solid #50555c; border-radius: 6px; padding: 6px 10px; }
-        QComboBox QAbstractItemView { background-color: #2c3136; border: 1px solid #3c4048; selection-background-color: #0078d7; }
+        QComboBox, QLineEdit {
+            background-color: #40454c;
+            border: 1px solid #50555c;
+            border-radius: 4px;
+            padding: 6px 10px;
+        }
+        QComboBox QAbstractItemView {
+            background-color: #2c3136;
+            border: 1px solid #3c4048;
+            selection-background-color: #0078d7;
+        }
 
-        QLabel { color: #E0E0E0; }
+        QSlider::groove:horizontal {
+            height: 4px;
+            background: #2c3136;
+            border-radius: 2px;
+        }
+        QSlider::handle:horizontal {
+            background: #00aaff;
+            width: 16px;
+            height: 16px;
+            margin: -6px 0;
+            border-radius: 8px;
+        }
 
-        QSlider::groove:horizontal { height: 6px; background: #3C4048; border-radius: 3px; }
-        QSlider::handle:horizontal { background: #00aaff; width: 14px; height: 14px; margin: -5px 0; border-radius: 7px; }
-
-        QCheckBox { spacing: 8px; }
-        QCheckBox::indicator { width: 18px; height: 18px; }
-        QCheckBox::indicator:unchecked { border: 1px solid #3C4048; background: #2D2F36; border-radius: 4px; }
-        QCheckBox::indicator:checked { border: 1px solid #00cc55; background: #00FF66; border-radius: 4px; }
-
-        QFrame#SeparatorLine { background-color: #3C4048; max-height: 1px; min-height: 1px; }
-
-        QToolTip { background-color: #2D2F36; color: #E0E0E0; border: 1px solid #3C4048; }
-        """)
+        QCheckBox {
+            spacing: 8px;
+        }
+        QCheckBox::indicator {
+            width: 16px; height: 16px;
+        }
+        QCheckBox::indicator:unchecked {
+            border: 1px solid #3c4048; background: #2c3136; border-radius: 4px;
+        }
+        QCheckBox::indicator:checked {
+            background-color: #0078d7; border: 1px solid #0088f7; border-radius: 4px;
+        }
+        """
+    )
 
 class SettingsDialog(QtWidgets.QDialog):
     def __init__(self, parent=None, preset_folder_path=""):
@@ -153,116 +213,99 @@ class ControlPanel(QtWidgets.QWidget):
         super().__init__()
         self.overlay = overlay
         self.setWindowTitle("Crosshair Control Panel")
-        self.setGeometry(100, 100, 400, 100)
+        self.setGeometry(100, 100, 450, 100)
         self._panel_animations = []
 
         self.setObjectName("controlPanel")
         self.setAttribute(QtCore.Qt.WA_StyledBackground, True)
-        self.setStyleSheet("#controlPanel { background-color: #181A1B; border: 1px solid #2C2F33; }")
 
         shadow = QtWidgets.QGraphicsDropShadowEffect(self)
         shadow.setBlurRadius(24)
         shadow.setColor(QtGui.QColor(0, 0, 0, 160))
-        shadow.setOffset(0, 12)
+        shadow.setOffset(0, 4)
         self.setGraphicsEffect(shadow)
 
-        layout = QtWidgets.QVBoxLayout()
+        # --- Main Layout ---
+        main_layout = QtWidgets.QVBoxLayout(self)
+        main_layout.setContentsMargins(10, 10, 10, 10)
+        main_layout.setSpacing(10)
 
+        # --- Menu Bar ---
         menu_bar = QtWidgets.QMenuBar()
-        settings_menu = menu_bar.addMenu("環境設定")
-        settings_menu.addAction("保存先フォルダを変更", self.open_settings)
-
+        settings_menu = menu_bar.addMenu("設定")
+        settings_menu.addAction("保存先フォルダ...", self.open_settings)
         settings_menu.addSeparator()
-
-        self.startup_action = QtWidgets.QAction("PC起動時に自動実行する", self, checkable=True)
+        self.startup_action = settings_menu.addAction("PC起動時に自動実行する")
+        self.startup_action.setCheckable(True)
         if utils.IS_WINDOWS:
             self.startup_action.setChecked(utils.is_in_startup(utils.APP_NAME))
             self.startup_action.triggered.connect(self.toggle_startup)
         else:
             self.startup_action.setEnabled(False)
-            self.startup_action.setToolTip("この機能はWindowsでのみ利用可能です。")
-        settings_menu.addAction(self.startup_action)
+        main_layout.setMenuBar(menu_bar)
 
-        settings_menu.addSeparator()
-
-        self.apex_monitor_action = QtWidgets.QAction("Apex Legendsを監視して自動切替", self, checkable=True)
-        self.apex_monitor_action.setToolTip("Apex Legendsの起動・終了に合わせてオーバーレイのON/OFFを自動で切り替えます。")
-
-        if utils.psutil:
-            self.apex_monitor_action.setChecked(self.overlay.monitor_apex)
-            self.apex_monitor_action.triggered.connect(self.toggle_apex_monitoring)
-        else:
-            self.apex_monitor_action.setEnabled(False)
-            self.apex_monitor_action.setToolTip("この機能を利用するには 'psutil' ライブラリが必要です。(pip install psutil)")
-        settings_menu.addAction(self.apex_monitor_action)
-
-        layout.setMenuBar(menu_bar)
-
-        self.master_toggle_btn = QtWidgets.QPushButton("オーバーレイを無効化")
+        # --- Master Toggle ---
+        self.master_toggle_btn = QtWidgets.QPushButton("オーバーレイ無効化")
         self.master_toggle_btn.setObjectName("masterToggleButton")
         self.master_toggle_btn.setToolTip("クロスヘアとドットの表示をまとめてON/OFFします")
-        icon = self.style().standardIcon(QtWidgets.QStyle.SP_DialogCancelButton)
-        self.master_toggle_btn.setIcon(icon)
         self.master_toggle_btn.clicked.connect(self.toggle_master_visibility)
-        layout.addWidget(self.master_toggle_btn)
+        main_layout.addWidget(self.master_toggle_btn)
 
-        if self.apex_monitor_action.isChecked():
-            self.master_toggle_btn.setEnabled(False)
-            self.master_toggle_btn.setToolTip("Apex監視が有効なため、手動でのON/OFFはできません。")
+        # --- Presets Group ---
+        presets_group = QtWidgets.QGroupBox("プリセット")
+        presets_layout = QtWidgets.QHBoxLayout(presets_group)
+        self.preset_box = QtWidgets.QComboBox()
+        self.save_btn = QtWidgets.QPushButton("保存")
+        self.save_btn.setProperty("accent", True)
+        self.save_btn.clicked.connect(self.save_preset)
+        presets_layout.addWidget(self.preset_box, 1)
+        presets_layout.addWidget(self.save_btn)
+        main_layout.addWidget(presets_group)
 
-        line_master = QtWidgets.QFrame()
-        line_master.setObjectName("SeparatorLine")
-        line_master.setFrameShape(QtWidgets.QFrame.HLine)
-        line_master.setFrameShadow(QtWidgets.QFrame.Sunken)
-        layout.addWidget(line_master)
-
-        self.detail_controls = []
-
+        # --- General Settings Group ---
+        general_group = QtWidgets.QGroupBox("全般設定")
+        general_layout = QtWidgets.QVBoxLayout(general_group)
+        
         monitor_layout = QtWidgets.QHBoxLayout()
-        monitor_label = QtWidgets.QLabel("表示モニター")
+        monitor_label = QtWidgets.QLabel("表示モニター:")
         self.monitor_selection_box = QtWidgets.QComboBox()
         self.monitor_selection_box.currentIndexChanged.connect(self.monitor_changed)
         monitor_layout.addWidget(monitor_label)
-        monitor_layout.addWidget(self.monitor_selection_box)
-        layout.addLayout(monitor_layout)
-        self.detail_controls.extend([monitor_label, self.monitor_selection_box])
+        monitor_layout.addWidget(self.monitor_selection_box, 1)
+        general_layout.addLayout(monitor_layout)
 
-        preset_layout = QtWidgets.QHBoxLayout()
-        self.preset_box = QtWidgets.QComboBox()
-        self.save_btn = QtWidgets.QPushButton("現在の設定を保存")
-        self.save_btn.setProperty("accent", True)
-        self.save_btn.clicked.connect(self.save_preset)
-        preset_layout.addWidget(self.preset_box)
-        preset_layout.addWidget(self.save_btn)
-        layout.addLayout(preset_layout)
-        self.detail_controls.extend([self.preset_box, self.save_btn])
+        self.apex_monitor_action = QtWidgets.QCheckBox("Apex Legendsを監視して自動ON/OFF")
+        if utils.psutil:
+            self.apex_monitor_action.setChecked(self.overlay.monitor_apex)
+            self.apex_monitor_action.toggled.connect(self.toggle_apex_monitoring)
+        else:
+            self.apex_monitor_action.setEnabled(False)
+            self.apex_monitor_action.setToolTip("この機能を利用するには 'psutil' ライブラリが必要です。(pip install psutil)")
+        general_layout.addWidget(self.apex_monitor_action)
 
-        line = QtWidgets.QFrame()
-        line.setObjectName("SeparatorLine")
-        line.setFrameShape(QtWidgets.QFrame.HLine)
-        line.setFrameShadow(QtWidgets.QFrame.Sunken)
-        layout.addWidget(line)
-        self.detail_controls.append(line)
+        self.fade_on_shoot_checkbox = QtWidgets.QCheckBox("射撃中はクロスヘアを薄くする")
+        self.fade_on_shoot_checkbox.toggled.connect(self.toggle_fade_on_shoot)
+        general_layout.addWidget(self.fade_on_shoot_checkbox)
+        main_layout.addWidget(general_group)
 
-        self.crosshair_btn = QtWidgets.QPushButton("クロスヘア表示/非表示"); self.crosshair_state = QtWidgets.QLabel()
-        self.crosshair_btn.clicked.connect(self.toggle_crosshair_button)
-        h1 = QtWidgets.QHBoxLayout(); h1.addWidget(self.crosshair_btn); h1.addWidget(self.crosshair_state); layout.addLayout(h1)
-        self.detail_controls.extend([self.crosshair_btn, self.crosshair_state])
+        # --- Crosshair Group ---
+        ch_group = QtWidgets.QGroupBox("クロスヘア")
+        ch_layout = QtWidgets.QVBoxLayout(ch_group)
+
+        self.crosshair_btn = QtWidgets.QCheckBox("クロスヘアを表示")
+        self.crosshair_btn.toggled.connect(self.toggle_crosshair_button)
+        ch_layout.addWidget(self.crosshair_btn)
 
         shape_layout = QtWidgets.QHBoxLayout()
-        shape_label = QtWidgets.QLabel("クロスヘア形状")
         self.shape_box = QtWidgets.QComboBox()
         self.shape_box.addItems(["十字", "十字 (ギャップなし)", "円", "矢印 (シェブロン)", "MAME", "カスタム画像"])
         self.shape_box.currentTextChanged.connect(self.update_crosshair_shape)
-        shape_layout.addWidget(shape_label)
-        shape_layout.addWidget(self.shape_box)
-        layout.addLayout(shape_layout)
-        self.detail_controls.extend([shape_label, self.shape_box])
+        shape_layout.addWidget(QtWidgets.QLabel("形状:"))
+        shape_layout.addWidget(self.shape_box, 1)
+        ch_layout.addLayout(shape_layout)
 
-        # Custom image selection widget (initially hidden)
         self.custom_image_widget = QtWidgets.QWidget()
-        custom_image_layout = QtWidgets.QHBoxLayout()
-        self.custom_image_widget.setLayout(custom_image_layout)
+        custom_image_layout = QtWidgets.QHBoxLayout(self.custom_image_widget)
         custom_image_layout.setContentsMargins(0, 5, 0, 0)
         select_image_btn = QtWidgets.QPushButton("画像を選択...")
         select_image_btn.clicked.connect(self.select_custom_image)
@@ -270,72 +313,83 @@ class ControlPanel(QtWidgets.QWidget):
         self.custom_image_path_label.setWordWrap(True)
         custom_image_layout.addWidget(select_image_btn)
         custom_image_layout.addWidget(self.custom_image_path_label, 1)
-        layout.addWidget(self.custom_image_widget)
-        self.detail_controls.extend([self.custom_image_widget, select_image_btn, self.custom_image_path_label])
+        ch_layout.addWidget(self.custom_image_widget)
 
-        self.dot_btn = QtWidgets.QPushButton("ドット表示/非表示"); self.dot_state = QtWidgets.QLabel()
-        self.dot_btn.clicked.connect(self.toggle_dot_button)
-        h2 = QtWidgets.QHBoxLayout(); h2.addWidget(self.dot_btn); h2.addWidget(self.dot_state); layout.addLayout(h2)
-        self.detail_controls.extend([self.dot_btn, self.dot_state])
+        ch_color_layout, self.ch_color_square = self.make_color_button("色:", lambda: self.overlay.crosshair_color, self.set_crosshair_color, lambda: self.overlay.update())
+        ch_layout.addLayout(ch_color_layout)
 
-        dotsize_layout = QtWidgets.QHBoxLayout(); dotsize_label = QtWidgets.QLabel("ドットサイズ")
-        self.dot_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal); self.dot_slider.setMinimum(0); self.dot_slider.setMaximum(100)
-        self.dot_value = QtWidgets.QLabel(); self.dot_slider.valueChanged.connect(self.update_dot_size)
-        dotsize_layout.addWidget(dotsize_label); dotsize_layout.addWidget(self.dot_slider); dotsize_layout.addWidget(self.dot_value); layout.addLayout(dotsize_layout)
-        self.detail_controls.extend([dotsize_label, self.dot_slider, self.dot_value])
+        alpha_layout = QtWidgets.QHBoxLayout()
+        self.alpha_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.alpha_slider.setRange(0, 100)
+        self.alpha_value = QtWidgets.QLabel()
+        self.alpha_slider.valueChanged.connect(self.update_alpha)
+        alpha_layout.addWidget(QtWidgets.QLabel("透明度:"))
+        alpha_layout.addWidget(self.alpha_slider)
+        alpha_layout.addWidget(self.alpha_value)
+        ch_layout.addLayout(alpha_layout)
+        main_layout.addWidget(ch_group)
 
-        def make_color_button(label_text, getter, setter, update_callback):
-            layout_ = QtWidgets.QHBoxLayout(); button = QtWidgets.QPushButton(label_text)
-            square = QtWidgets.QLabel(); square.setFixedSize(20, 20)
-            def pick_color():
-                color = QtWidgets.QColorDialog.getColor(QtGui.QColor(getter()))
-                if color.isValid(): 
-                    setter(color.name())
-                    square.setStyleSheet(f"background-color: {color.name()}; border: 1px solid #3C4048; border-radius: 4px;")
-                    update_callback()
-                    self.overlay._set_dirty_and_update_display()
-            button.clicked.connect(pick_color)
-            layout_.addWidget(button); layout_.addWidget(square); return layout_, square
-        
-        color_update_cb = lambda: self.overlay.update()
-        ch_color_layout, self.ch_color_square = make_color_button("クロスヘア色", lambda: self.overlay.crosshair_color, self.set_crosshair_color, color_update_cb)
-        dot_out_color_layout, self.dot_out_color_square = make_color_button("ドット外枠色", lambda: self.overlay.dot_outer_color, self.set_dot_outer_color, color_update_cb)
-        dot_in_color_layout, self.dot_in_color_square = make_color_button("ドット内側色", lambda: self.overlay.dot_inner_color, self.set_dot_inner_color, color_update_cb)
-        layout.addLayout(ch_color_layout); layout.addLayout(dot_out_color_layout); layout.addLayout(dot_in_color_layout)
-        for i in range(ch_color_layout.count()): self.detail_controls.append(ch_color_layout.itemAt(i).widget())
-        for i in range(dot_out_color_layout.count()): self.detail_controls.append(dot_out_color_layout.itemAt(i).widget())
-        for i in range(dot_in_color_layout.count()): self.detail_controls.append(dot_in_color_layout.itemAt(i).widget())
+        # --- Dot Group ---
+        dot_group = QtWidgets.QGroupBox("ドット")
+        dot_layout = QtWidgets.QVBoxLayout(dot_group)
 
-        alpha_layout = QtWidgets.QHBoxLayout(); alpha_label = QtWidgets.QLabel("クロスヘア透明度")
-        self.alpha_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal); self.alpha_slider.setMinimum(0); self.alpha_slider.setMaximum(100)
-        self.alpha_value = QtWidgets.QLabel(); self.alpha_slider.valueChanged.connect(self.update_alpha)
-        alpha_layout.addWidget(alpha_label); alpha_layout.addWidget(self.alpha_slider); alpha_layout.addWidget(self.alpha_value); layout.addLayout(alpha_layout)
-        self.detail_controls.extend([alpha_label, self.alpha_slider, self.alpha_value])
+        self.dot_btn = QtWidgets.QCheckBox("ドットを表示")
+        self.dot_btn.toggled.connect(self.toggle_dot_button)
+        dot_layout.addWidget(self.dot_btn)
 
-        dot_alpha_layout = QtWidgets.QHBoxLayout(); dot_alpha_label = QtWidgets.QLabel("ドット透明度")
-        self.dot_alpha_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal); self.dot_alpha_slider.setMinimum(0); self.dot_alpha_slider.setMaximum(100)
-        self.dot_alpha_value = QtWidgets.QLabel(); self.dot_alpha_slider.valueChanged.connect(self.update_dot_alpha)
-        dot_alpha_layout.addWidget(dot_alpha_label); dot_alpha_layout.addWidget(self.dot_alpha_slider); dot_alpha_layout.addWidget(self.dot_alpha_value); layout.addLayout(dot_alpha_layout)
-        self.detail_controls.extend([dot_alpha_label, self.dot_alpha_slider, self.dot_alpha_value])
+        dotsize_layout = QtWidgets.QHBoxLayout()
+        self.dot_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.dot_slider.setRange(0, 100)
+        self.dot_value = QtWidgets.QLabel()
+        self.dot_slider.valueChanged.connect(self.update_dot_size)
+        dotsize_layout.addWidget(QtWidgets.QLabel("サイズ:"))
+        dotsize_layout.addWidget(self.dot_slider)
+        dotsize_layout.addWidget(self.dot_value)
+        dot_layout.addLayout(dotsize_layout)
 
-        self.fade_on_shoot_checkbox = QtWidgets.QCheckBox("射撃中はクロスヘアを薄くする")
-        self.fade_on_shoot_checkbox.toggled.connect(self.toggle_fade_on_shoot)
-        layout.addWidget(self.fade_on_shoot_checkbox)
-        self.detail_controls.append(self.fade_on_shoot_checkbox)
+        dot_out_color_layout, self.dot_out_color_square = self.make_color_button("外枠の色:", lambda: self.overlay.dot_outer_color, self.set_dot_outer_color, lambda: self.overlay.update())
+        dot_in_color_layout, self.dot_in_color_square = self.make_color_button("内側の色:", lambda: self.overlay.dot_inner_color, self.set_dot_inner_color, lambda: self.overlay.update())
+        dot_layout.addLayout(dot_out_color_layout)
+        dot_layout.addLayout(dot_in_color_layout)
 
-        disable_layout = QtWidgets.QHBoxLayout(); disable_btn = QtWidgets.QPushButton("キーを無効化")
-        self.disabled_keys_label = QtWidgets.QLabel(", ".join(self.overlay.disabled_keys) if self.overlay.disabled_keys else "なし"); self.disabled_keys_label.setWordWrap(True)
-        disable_btn.clicked.connect(self.disable_key_gui); disable_layout.addWidget(disable_btn); disable_layout.addWidget(self.disabled_keys_label); layout.addLayout(disable_layout)
-        self.detail_controls.extend([disable_btn, self.disabled_keys_label])
+        dot_alpha_layout = QtWidgets.QHBoxLayout()
+        self.dot_alpha_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.dot_alpha_slider.setRange(0, 100)
+        self.dot_alpha_value = QtWidgets.QLabel()
+        self.dot_alpha_slider.valueChanged.connect(self.update_dot_alpha)
+        dot_alpha_layout.addWidget(QtWidgets.QLabel("透明度:"))
+        dot_alpha_layout.addWidget(self.dot_alpha_slider)
+        dot_alpha_layout.addWidget(self.dot_alpha_value)
+        dot_layout.addLayout(dot_alpha_layout)
+        main_layout.addWidget(dot_group)
 
-        enable_btn = QtWidgets.QPushButton("キーを有効化"); enable_btn.clicked.connect(self.enable_key_gui); layout.addWidget(enable_btn)
-        enable_all_btn = QtWidgets.QPushButton("すべてのキーを有効化"); enable_all_btn.clicked.connect(self.enable_all_keys_gui); layout.addWidget(enable_all_btn)
-        self.detail_controls.extend([enable_btn, enable_all_btn])
+        # --- Keys Group ---
+        keys_group = QtWidgets.QGroupBox("キー無効化")
+        keys_layout = QtWidgets.QVBoxLayout(keys_group)
+        self.disabled_keys_label = QtWidgets.QLabel("なし")
+        self.disabled_keys_label.setWordWrap(True)
+        keys_layout.addWidget(self.disabled_keys_label, 1)
+        keys_btn_layout = QtWidgets.QHBoxLayout()
+        disable_btn = QtWidgets.QPushButton("無効化キーを追加")
+        disable_btn.clicked.connect(self.disable_key_gui)
+        enable_btn = QtWidgets.QPushButton("無効化キーを削除")
+        enable_btn.clicked.connect(self.enable_key_gui)
+        keys_btn_layout.addWidget(disable_btn)
+        keys_btn_layout.addWidget(enable_btn)
+        keys_layout.addLayout(keys_btn_layout)
+        enable_all_btn = QtWidgets.QPushButton("すべてのキーを有効化")
+        enable_all_btn.clicked.connect(self.enable_all_keys_gui)
+        keys_layout.addWidget(enable_all_btn)
+        main_layout.addWidget(keys_group)
 
-        self.setLayout(layout)
-        
+        main_layout.addStretch()
+
+        # --- Finalize ---
+        if self.apex_monitor_action.isChecked():
+            self.master_toggle_btn.setEnabled(False)
+            self.master_toggle_btn.setToolTip("Apex監視が有効なため、手動でのON/OFFはできません。")
+
         self.update_control_panel_ui()
-        
         self.load_presets()
         self.preset_box.currentIndexChanged.connect(self.load_selected_preset)
         
@@ -344,7 +398,26 @@ class ControlPanel(QtWidgets.QWidget):
 
         self.setWindowOpacity(0.0)
         self.animate_panel_show()
-        self._pulse_once(self.save_btn, QtGui.QColor("#00FF66"))
+        self._pulse_once(self.save_btn, QtGui.QColor("#0078d7"))
+
+    def make_color_button(self, label_text, getter, setter, update_callback):
+        layout_ = QtWidgets.QHBoxLayout()
+        button = QtWidgets.QPushButton(label_text)
+        square = QtWidgets.QLabel()
+        square.setFixedSize(24, 24)
+        square.setStyleSheet(f"background-color: {getter()}; border: 1px solid #50555c; border-radius: 4px;")
+        def pick_color():
+            color = QtWidgets.QColorDialog.getColor(QtGui.QColor(getter()), self, "色を選択")
+            if color.isValid(): 
+                setter(color.name())
+                square.setStyleSheet(f"background-color: {color.name()}; border: 1px solid #50555c; border-radius: 4px;")
+                update_callback()
+                self.overlay._set_dirty_and_update_display()
+        button.clicked.connect(pick_color)
+        layout_.addWidget(button)
+        layout_.addStretch()
+        layout_.addWidget(square)
+        return layout_, square
 
     def closeEvent(self, event):
         if self.overlay.is_dirty:
@@ -445,20 +518,12 @@ class ControlPanel(QtWidgets.QWidget):
 
         self.overlay.master_enabled = enabled
 
-        if manual_toggle and hasattr(self, 'detail_controls'):
-            for widget in self.detail_controls:
-                widget.setEnabled(self.overlay.master_enabled)
-
         if hasattr(self, 'master_toggle_btn'):
             if self.overlay.master_enabled:
-                self.master_toggle_btn.setText("オーバーレイを無効化")
-                icon = self.style().standardIcon(QtWidgets.QStyle.SP_DialogCancelButton)
-                self.master_toggle_btn.setIcon(icon)
+                self.master_toggle_btn.setText("オーバーレイ無効化")
                 self.master_toggle_btn.setObjectName("masterToggleButton")
             else:
                 self.master_toggle_btn.setText("オーバーレイ有効化")
-                icon = self.style().standardIcon(QtWidgets.QStyle.SP_DialogApplyButton)
-                self.master_toggle_btn.setIcon(icon)
                 self.master_toggle_btn.setObjectName("masterToggleButtonActive")
             
             self.master_toggle_btn.style().unpolish(self.master_toggle_btn)
@@ -481,7 +546,7 @@ class ControlPanel(QtWidgets.QWidget):
             if utils.remove_from_startup(utils.APP_NAME):
                 QtWidgets.QMessageBox.information(self, "設定完了", "スタートアップ設定を解除しました。")
             else:
-                QtWidgets.QMessageBox.warning(self, "設定失敗", "スタートアップからの登録解除に失敗しました。")
+                QtWidgets.QMessageBox.warning(self, "設定失敗", "スタートアップからの登録解除に失敗しました。 সন")
                 self.startup_action.setChecked(True)
 
     @QtCore.pyqtSlot(bool)
@@ -498,7 +563,7 @@ class ControlPanel(QtWidgets.QWidget):
         if checked:
             self.master_toggle_btn.setToolTip("Apex監視が有効なため、手動でのON/OFFはできません。")
             if not utils.psutil:
-                QtWidgets.QMessageBox.warning(self, "ライブラリ不足", "この機能を利用するには 'psutil' が必要です。コマンドプロンプトで 'pip install psutil' を実行してください。 সন")
+                QtWidgets.QMessageBox.warning(self, "ライブラリ不足", "この機能を利用するには 'psutil' が必要です。コマンドプロンプトで 'pip install psutil' を実行してください。")
                 if hasattr(self, 'apex_monitor_action'):
                     self.apex_monitor_action.setChecked(False)
                 return
