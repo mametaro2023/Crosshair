@@ -1,5 +1,6 @@
 import os
 import json
+import webbrowser
 from PyQt5 import QtCore, QtGui, QtWidgets
 import keyboard
 
@@ -207,6 +208,30 @@ class KeyCaptureDialog(QtWidgets.QDialog):
         if result == QtWidgets.QDialog.Accepted and self.key_callback and self.captured_key:
             self.key_callback(self.captured_key)
         return result
+
+class ProgressDialog(QtWidgets.QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("アップデート中...")
+        self.setFixedSize(300, 100)
+        self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowContextHelpButtonHint)
+        self.setWindowModality(QtCore.Qt.ApplicationModal)
+
+        layout = QtWidgets.QVBoxLayout(self)
+
+        self.label = QtWidgets.QLabel("ダウンロード中...")
+        layout.addWidget(self.label)
+
+        self.progress_bar = QtWidgets.QProgressBar(self)
+        self.progress_bar.setRange(0, 100)
+        layout.addWidget(self.progress_bar)
+
+    @QtCore.pyqtSlot(int)
+    def update_progress(self, value):
+        self.progress_bar.setValue(value)
+        self.label.setText(f"ダウンロード中... {value}%")
+        if value == 100:
+            self.label.setText("ダウンロード完了。アップデートを準備中...")
 
 class ControlPanel(QtWidgets.QWidget):
     def __init__(self, overlay):
@@ -438,7 +463,7 @@ class ControlPanel(QtWidgets.QWidget):
 
     def load_presets(self):
         self.preset_box.blockSignals(True)
-        self.preset_box.clear()
+        self.preset_box.clear() 
         
         self.preset_box.addItem(self.overlay.UNSAVED_PRESET_TEXT)
         self.preset_box.addItem("デフォルト設定")
@@ -540,7 +565,7 @@ class ControlPanel(QtWidgets.QWidget):
             if utils.add_to_startup(utils.APP_NAME, path):
                 QtWidgets.QMessageBox.information(self, "設定完了", "PC起動時に自動実行するよう設定しました。")
             else:
-                QtWidgets.QMessageBox.warning(self, "設定失敗", "スタートアップへの登録に失敗しました。\n管理者として実行すると解決する場合があります。")
+                QtWidgets.QMessageBox.warning(self, "設定失敗", "スタートアップへの登録に失敗しました。\n管理者として実行すると解決する場合があります。 সন")
                 self.startup_action.setChecked(False)
         else:
             if utils.remove_from_startup(utils.APP_NAME):
@@ -729,7 +754,7 @@ class ControlPanel(QtWidgets.QWidget):
     def update_dot_alpha(self, val): 
         alpha = round(val / 100, 2)
         self.overlay.dot_alpha = alpha
-        self.dot_alpha_value.setText(f"{alpha:.2f}")
+        self.dot_alpha_value.setText(f"{self.overlay.dot_alpha:.2f}")
         self.overlay.update()
         self.overlay._set_dirty_and_update_display()
 
@@ -779,3 +804,37 @@ class ControlPanel(QtWidgets.QWidget):
         self.disabled_keys_label.setText("なし")
         self.overlay.update()
         self.overlay._set_dirty_and_update_display()
+
+class UpdateDialog(QtWidgets.QDialog):
+    def __init__(self, parent, update_info):
+        super().__init__(parent)
+        self.setWindowTitle("新しいバージョンが利用可能です")
+        self.setMinimumWidth(400)
+
+        layout = QtWidgets.QVBoxLayout(self)
+
+        title_label = QtWidgets.QLabel(f" {update_info['latest_version']} が利用可能です。")
+        title_label.setStyleSheet("font-weight: bold; font-size: 12pt;")
+        layout.addWidget(title_label)
+
+        layout.addWidget(QtWidgets.QLabel("リリースノート:"))
+        
+        notes_text = QtWidgets.QTextEdit()
+        notes_text.setHtml(update_info['release_notes'].replace('\n', '<br>'))
+        notes_text.setReadOnly(True)
+        layout.addWidget(notes_text)
+
+        button_box = QtWidgets.QDialogButtonBox()
+        update_button = button_box.addButton("今すぐアップデート", QtWidgets.QDialogButtonBox.AcceptRole)
+        later_button = button_box.addButton("後で", QtWidgets.QDialogButtonBox.RejectRole)
+        
+        layout.addWidget(button_box)
+
+        update_button.clicked.connect(self.accept)
+        later_button.clicked.connect(self.reject)
+
+def show_update_dialog(parent, update_info):
+    """アップデート通知ダイアログを表示する"""
+    if parent and update_info:
+        dialog = UpdateDialog(parent, update_info)
+        dialog.exec_()
