@@ -3,23 +3,15 @@ import json
 
 APP_VERSION = "ver1.5.3"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".crosshair_config.json")
-DEFAULT_PRESET_FOLDER = os.path.join(os.path.expanduser("~"), "Documents", "CrosshairPresets")
+DEFAULT_OVERALL_PRESET_FOLDER = os.path.join(os.path.expanduser("~"), "Documents", "CrosshairPresets")
+DEFAULT_SHAPE_PRESET_FOLDER = os.path.join(os.path.expanduser("~"), "Documents", "CrosshairShapes")
 PRESET_EXTENSION = ".mametaro"
 
 def load_config():
     defaults = {
-        "crosshair_visible": True,
-        "dot_visible": True,
-        "dot_radius": 5,
-        "crosshair_color": "#00FF66",
-        "dot_outer_color": "#FFFFFF",
-        "dot_inner_color": "#000000",
-        "disabled_keys": [],
-        "crosshair_alpha": 1.0,
-        "dot_alpha": 1.0,
-        "fade_on_shoot": False,
         "last_selected": "デフォルト設定",
-        "preset_folder": DEFAULT_PRESET_FOLDER,
+        "overall_preset_folder": DEFAULT_OVERALL_PRESET_FOLDER,
+        "shape_preset_folder": DEFAULT_SHAPE_PRESET_FOLDER,
         "monitor_apex": False,
         "toggle_hotkey": "ctrl+f1"
     }
@@ -31,33 +23,32 @@ def load_config():
         with open(CONFIG_FILE, "r", encoding="utf-8") as f:
             config = json.load(f)
 
-        if "crosshair_visible" in config:
+        if "crosshair_visible" in config: # 旧形式かの判定
             print("古い形式の設定ファイルを検出しました。新しいプリセット形式に変換します。")
             
             imported_preset_name = "旧バージョンからのインポート設定"
-            preset_folder = config.get("preset_folder", DEFAULT_PRESET_FOLDER)
-            os.makedirs(preset_folder, exist_ok=True)
-            imported_preset_path = os.path.join(preset_folder, imported_preset_name + PRESET_EXTENSION)
+            overall_folder = config.get("preset_folder", DEFAULT_OVERALL_PRESET_FOLDER)
+            os.makedirs(overall_folder, exist_ok=True)
+            imported_preset_path = os.path.join(overall_folder, imported_preset_name + PRESET_EXTENSION)
             
             with open(imported_preset_path, "w", encoding="utf-8") as f_preset:
                 json.dump(config, f_preset, indent=4)
             
             new_main_config = {
                 "last_selected": imported_preset_name,
-                "preset_folder": preset_folder,
-                "monitor_apex": config.get("monitor_apex", False)
+                "overall_preset_folder": overall_folder,
+                "shape_preset_folder": DEFAULT_SHAPE_PRESET_FOLDER, # 新しいパスを追加
+                "monitor_apex": config.get("monitor_apex", False),
+                "toggle_hotkey": config.get("toggle_hotkey", "ctrl+f1")
             }
             with open(CONFIG_FILE, "w", encoding="utf-8") as f_main:
                 json.dump(new_main_config, f_main, indent=4)
             
             print(f"設定を '{imported_preset_name}' として保存しました。")
-
-            for key, value in defaults.items():
-                config.setdefault(key, value)
-            return config
+            return new_main_config
             
         else:
-            defaults["preset_folder"] = config.get("preset_folder", DEFAULT_PRESET_FOLDER)
+            # 新形式の場合は、デフォルト値を適用
             for key, value in defaults.items():
                 config.setdefault(key, value)
             return config

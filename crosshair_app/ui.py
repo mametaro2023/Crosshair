@@ -8,6 +8,7 @@ from . import utils
 from . import config
 from .dialogs import SettingsDialog, KeyCaptureDialog
 from .ui_components import tab_general, tab_crosshair, tab_dot, tab_keys
+from .editor.editor_dialog import EditorDialog
 
 
 class ControlPanel(QtWidgets.QWidget):
@@ -49,8 +50,9 @@ class ControlPanel(QtWidgets.QWidget):
         self._create_tab_widget(main_layout)
 
         # --- Finalize ---
+        self.reload_shapes() # 静的なリストの代わりに動的に読み込む
         self.update_control_panel_ui()
-        self.load_presets()
+        self.load_presets() # プリセットのロードはUI更新の後に行う
         self.preset_box.currentIndexChanged.connect(self.load_selected_preset)
         
         if self.overlay.monitor_apex and utils.psutil:
@@ -167,6 +169,41 @@ class ControlPanel(QtWidgets.QWidget):
         if result == QtWidgets.QDialog.Rejected:
             self.overlay.register_toggle_hotkey()
 
+    def reload_shapes(self):
+        """利用可能なクロスヘア形状を動的に読み込む"""
+        if not hasattr(self, 'shape_box'):
+            return
+            
+        current_selection = self.shape_box.currentText()
+        
+        self.shape_box.blockSignals(True)
+        self.shape_box.clear()
+
+        # 基本形状
+        shapes = ["十字", "十字 (ギャップなし)", "円", "矢印 (シェブロン)"]
+        self.shape_box.addItems(shapes)
+
+        # カスタム形状 (.crshr)
+        try:
+            custom_shapes = [os.path.splitext(f)[0] for f in os.listdir(self.overlay.shape_preset_folder) if f.endswith(".crshr")]
+            if custom_shapes:
+                self.shape_box.addItems(sorted(custom_shapes))
+        except Exception as e:
+            print(f"カスタム形状の読み込みに失敗: {e}")
+
+        # 画像形状
+        self.shape_box.addItems(["MAME", "カスタム画像"])
+        
+        # 作成
+        self.shape_box.addItem("新しく作る")
+
+        # 以前の選択を復元
+        index = self.shape_box.findText(current_selection)
+        if index != -1:
+            self.shape_box.setCurrentIndex(index)
+
+        self.shape_box.blockSignals(False)
+
     def update_hotkey_menu_text(self):
         current_hotkey = self.overlay.toggle_hotkey
         self.hotkey_action.setText(f"ショートカットキー設定... ({current_hotkey})")
@@ -234,10 +271,10 @@ class ControlPanel(QtWidgets.QWidget):
         self.preset_box.addItem(self.overlay.UNSAVED_PRESET_TEXT)
         self.preset_box.addItem("デフォルト設定")
         self.overlay.presets = {"デフォルト設定": self.overlay.default_config}
-        for file in os.listdir(self.overlay.preset_folder):
+        for file in os.listdir(self.overlay.overall_preset_folder):
             if file.endswith(config.PRESET_EXTENSION):
                 name = os.path.splitext(file)[0]
-                path = os.path.join(self.overlay.preset_folder, file)
+                path = os.path.join(self.overlay.overall_preset_folder, file)
                 try:
                     with open(path, "r", encoding="utf-8") as f:
                         data = json.load(f)
@@ -256,7 +293,7 @@ class ControlPanel(QtWidgets.QWidget):
 
     def save_preset(self):
         path, _ = QtWidgets.QFileDialog.getSaveFileName(
-            self, "プリセットを保存", os.path.join(self.overlay.preset_folder, "preset" + config.PRESET_EXTENSION),
+            self, "プリセットを保存", self.overlay.overall_preset_folder,
             f"プリセットファイル (*{config.PRESET_EXTENSION})")
         if path:
             if not path.endswith(config.PRESET_EXTENSION):
@@ -287,14 +324,21 @@ class ControlPanel(QtWidgets.QWidget):
         self.overlay.is_dirty = False
 
     def open_settings(self):
-        dlg = SettingsDialog(self, self.overlay.preset_folder)
+        dlg = SettingsDialog(self, self.overlay.overall_preset_folder, self.overlay.shape_preset_folder)
         if dlg.exec_() == QtWidgets.QDialog.Accepted:
-            new_path = dlg.get_selected_path()
-            if new_path:
-                self.overlay.preset_folder = new_path
-                os.makedirs(self.overlay.preset_folder, exist_ok=True)
-                self.overlay.save_global_config()
-                self.load_presets()
+            new_overall_path, new_shape_path = dlg.get_selected_paths()
+            
+            if new_overall_path:
+                self.overlay.overall_preset_folder = new_overall_path
+                os.makedirs(self.overlay.overall_preset_folder, exist_ok=True)
+
+            if new_shape_path:
+                self.overlay.shape_preset_folder = new_shape_path
+                os.makedirs(self.overlay.shape_preset_folder, exist_ok=True)
+
+            self.overlay.save_global_config()
+            self.load_presets()
+            self.reload_shapes()
 
     def set_master_enabled(self, enabled, manual_toggle=False):
         if self.overlay.master_enabled == enabled and not manual_toggle:
@@ -486,6 +530,21 @@ class ControlPanel(QtWidgets.QWidget):
         QtWidgets.QMessageBox.warning(self, "ダウンロード失敗", f"mame.png のダウンロードに失敗しました。\n{error_message}")
 
     def update_crosshair_shape(self, shape_text):
+        if shape_text == "新しく作る":
+            # 現在の形状を記憶しておく
+            previous_shape = self.overlay.crosshair_shape
+            
+            editor = EditorDialog(self, shape_preset_folder=self.overlay.shape_preset_folder)
+            if editor.exec_() == QtWidgets.QDialog.Accepted:
+                self.reload_shapes()
+                if editor.saved_path:
+                    new_shape_name = os.path.splitext(os.path.basename(editor.saved_path))[0]
+                    self.shape_box.setCurrentText(new_shape_name)
+            else:
+                # キャンセルされたら元の形状に戻す
+                self.shape_box.setCurrentText(previous_shape)
+            return
+
         self.overlay.crosshair_shape = shape_text
         is_image_based = shape_text in ["MAME", "カスタム画像"]
         self.ch_color_widget.setVisible(not is_image_based)

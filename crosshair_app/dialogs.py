@@ -3,31 +3,44 @@ import keyboard
 import threading
 
 class SettingsDialog(QtWidgets.QDialog):
-    def __init__(self, parent=None, preset_folder_path=""):
+    def __init__(self, parent=None, overall_folder="", shape_folder=""):
         super().__init__(parent)
         self.setWindowTitle("環境設定")
-        self.setLayout(QtWidgets.QVBoxLayout())
+        layout = QtWidgets.QVBoxLayout(self)
 
-        path_layout = QtWidgets.QHBoxLayout()
-        self.path_label = QtWidgets.QLabel(preset_folder_path)
-        self.browse_btn = QtWidgets.QPushButton("参照")
-        self.browse_btn.clicked.connect(self.browse_folder)
-        path_layout.addWidget(self.path_label)
-        path_layout.addWidget(self.browse_btn)
+        # 全体プリセットフォルダ
+        overall_group = QtWidgets.QGroupBox("全体プリセットの保存先")
+        overall_layout = QtWidgets.QHBoxLayout(overall_group)
+        self.overall_path_label = QtWidgets.QLabel(overall_folder)
+        overall_browse_btn = QtWidgets.QPushButton("参照")
+        overall_browse_btn.clicked.connect(lambda: self.browse_folder(self.overall_path_label))
+        overall_layout.addWidget(self.overall_path_label)
+        overall_layout.addWidget(overall_browse_btn)
+        layout.addWidget(overall_group)
 
-        self.layout().addLayout(path_layout)
+        # 形状プリセットフォルダ
+        shape_group = QtWidgets.QGroupBox("形状プリセット (.crshr) の保存先")
+        shape_layout = QtWidgets.QHBoxLayout(shape_group)
+        self.shape_path_label = QtWidgets.QLabel(shape_folder)
+        shape_browse_btn = QtWidgets.QPushButton("参照")
+        shape_browse_btn.clicked.connect(lambda: self.browse_folder(self.shape_path_label))
+        shape_layout.addWidget(self.shape_path_label)
+        shape_layout.addWidget(shape_browse_btn)
+        layout.addWidget(shape_group)
 
-        close_btn = QtWidgets.QPushButton("閉じる")
-        close_btn.clicked.connect(self.accept)
-        self.layout().addWidget(close_btn)
+        # 閉じるボタン
+        button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
+        button_box.accepted.connect(self.accept)
+        button_box.rejected.connect(self.reject)
+        layout.addWidget(button_box)
 
-    def browse_folder(self):
-        folder = QtWidgets.QFileDialog.getExistingDirectory(self, "フォルダを選択", self.path_label.text())
+    def browse_folder(self, label_to_update):
+        folder = QtWidgets.QFileDialog.getExistingDirectory(self, "フォルダを選択", label_to_update.text())
         if folder:
-            self.path_label.setText(folder)
+            label_to_update.setText(folder)
 
-    def get_selected_path(self):
-        return self.path_label.text()
+    def get_selected_paths(self):
+        return self.overall_path_label.text(), self.shape_path_label.text()
 
 class KeyCaptureDialog(QtWidgets.QDialog):
     def __init__(self, parent=None, message="キーを押してください", key_callback=None):

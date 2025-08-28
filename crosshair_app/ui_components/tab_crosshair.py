@@ -14,7 +14,7 @@ def create_tab(panel):
 
     shape_layout = QtWidgets.QHBoxLayout()
     panel.shape_box = QtWidgets.QComboBox()
-    panel.shape_box.addItems(["十字", "十字 (ギャップなし)", "円", "矢印 (シェブロン)", "MAME", "カスタム画像"])
+    # アイテムの追加は ui.py の reload_shapes で行うので、ここでは削除
     panel.shape_box.currentTextChanged.connect(panel.update_crosshair_shape)
     shape_layout.addWidget(QtWidgets.QLabel("形状:"))
     shape_layout.addWidget(panel.shape_box, 1)

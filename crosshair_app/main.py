@@ -63,8 +63,10 @@ class CrosshairOverlay(QtWidgets.QWidget):
         else:
             self.master_enabled = True
 
-        self.preset_folder = loaded_config.get("preset_folder", config.DEFAULT_PRESET_FOLDER)
-        os.makedirs(self.preset_folder, exist_ok=True)
+        self.overall_preset_folder = loaded_config.get("overall_preset_folder", config.DEFAULT_OVERALL_PRESET_FOLDER)
+        self.shape_preset_folder = loaded_config.get("shape_preset_folder", config.DEFAULT_SHAPE_PRESET_FOLDER)
+        os.makedirs(self.overall_preset_folder, exist_ok=True)
+        os.makedirs(self.shape_preset_folder, exist_ok=True)
         self.default_config = {
             "crosshair_visible": True, "dot_visible": True, "dot_radius": 5,
             "crosshair_color": "#00FF66", "dot_outer_color": "#FFFFFF",
@@ -104,13 +106,13 @@ class CrosshairOverlay(QtWidgets.QWidget):
                     main_config = json.load(f)
                 
                 preset_name = main_config.get("last_selected", "デフォルト設定")
-                preset_folder = main_config.get("preset_folder", config.DEFAULT_PRESET_FOLDER)
+                overall_folder = main_config.get("overall_preset_folder", config.DEFAULT_OVERALL_PRESET_FOLDER)
                 
                 if preset_name == "デフォルト設定":
                     default_with_shape = self.default_config.copy()
                     return default_with_shape
 
-                preset_file = os.path.join(preset_folder, preset_name + config.PRESET_EXTENSION)
+                preset_file = os.path.join(overall_folder, preset_name + config.PRESET_EXTENSION)
                 if os.path.exists(preset_file):
                     with open(preset_file, "r", encoding="utf-8") as f:
                         return json.load(f)
@@ -149,6 +151,29 @@ class CrosshairOverlay(QtWidgets.QWidget):
             "crosshair_image_path": self.crosshair_image_path
         }
 
+    def render_crshr(self, painter, path):
+        """カスタムの.crshrファイルを描画する"""
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            
+            pixels = data.get("pixels", [])
+            # キャンバスサイズ(40x40)に基づいて中央からのオフセットを計算
+            offset_x = self.center_x - (data.get("size", [40, 40])[0] // 2)
+            offset_y = self.center_y - (data.get("size", [40, 40])[1] // 2)
+
+            painter.setOpacity(self.crosshair_alpha)
+
+            for pixel in pixels:
+                pos = pixel.get("pos")
+                color_str = pixel.get("color")
+                if pos and color_str:
+                    color = QtGui.QColor(color_str)
+                    painter.setPen(color)
+                    painter.drawPoint(offset_x + pos[0], offset_y + pos[1])
+        except Exception as e:
+            print(f"カスタムクロスヘアの描画に失敗: {path}, {e}")
+
     def paintEvent(self, event):
         if not self.master_enabled:
             return
@@ -159,54 +184,65 @@ class CrosshairOverlay(QtWidgets.QWidget):
         painter = QtGui.QPainter(self)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
 
-        ch_alpha = self.crosshair_alpha
+        # --- カスタム形状 (.crshr) の描画 --- #
+        shape = self.crosshair_shape
+        crshr_path = os.path.join(self.shape_preset_folder, shape + ".crshr")
+
+        if os.path.exists(crshr_path):
+            self.render_crshr(painter, crshr_path)
+            # .crshrを描画した場合は、以降の描画処理をスキップ
+        else:
+            # --- 標準形状の描画 --- #
+            ch_alpha = self.crosshair_alpha
+            if self.fade_on_shoot_enabled and self.is_shooting:
+                ch_alpha *= 0.3
+
+            if self.crosshair_visible:
+                painter.setOpacity(ch_alpha)
+                
+                image_path = None
+                if shape == "MAME":
+                    image_path = "mame.png"
+                elif shape == "カスタム画像":
+                    image_path = self.crosshair_image_path
+
+                if image_path and os.path.exists(image_path):
+                    pixmap = QtGui.QPixmap(image_path)
+                    if not pixmap.isNull():
+                        target_size = self.size * 2
+                        target_rect = QtCore.QRect(self.center_x - self.size, self.center_y - self.size, target_size, target_size)
+                        painter.drawPixmap(target_rect, pixmap)
+                else:
+                    color = QtGui.QColor(self.crosshair_color)
+                    color.setAlphaF(ch_alpha)
+                    pen = QtGui.QPen(color, 2)
+                    painter.setPen(pen)
+                    if shape == "十字":
+                        gap = 10
+                        painter.drawLine(self.center_x - self.size, self.center_y, self.center_x - gap, self.center_y)
+                        painter.drawLine(self.center_x + gap, self.center_y, self.center_x + self.size, self.center_y)
+                        painter.drawLine(self.center_x, self.center_y - self.size, self.center_x, self.center_y - gap)
+                        painter.drawLine(self.center_x, self.center_y + gap, self.center_x, self.center_y + self.size)
+                    elif shape == "十字 (ギャップなし)":
+                        painter.drawLine(self.center_x - self.size, self.center_y, self.center_x + self.size, self.center_y)
+                        painter.drawLine(self.center_x, self.center_y - self.size, self.center_x, self.center_y + self.size)
+                    elif shape == "円":
+                        painter.setBrush(QtCore.Qt.NoBrush)
+                        rect = QtCore.QRect(self.center_x - self.size, self.center_y - self.size, self.size * 2, self.size * 2)
+                        painter.drawEllipse(rect)
+                    elif shape == "矢印 (シェブロン)":
+                        arrow_size = self.size // 2
+                        points = [
+                            QtCore.QPoint(self.center_x - arrow_size, self.center_y + arrow_size),
+                            QtCore.QPoint(self.center_x, self.center_y),
+                            QtCore.QPoint(self.center_x + arrow_size, self.center_y + arrow_size)
+                        ]
+                        painter.drawPolyline(QtGui.QPolygon(points))
+
+        # --- ドットの描画 --- #
         dot_alpha = self.dot_alpha
         if self.fade_on_shoot_enabled and self.is_shooting:
-            ch_alpha *= 0.3
             dot_alpha *= 0.3
-
-        if self.crosshair_visible:
-            painter.setOpacity(ch_alpha)
-            shape = self.crosshair_shape
-            
-            image_path = None
-            if shape == "MAME":
-                image_path = "mame.png"
-            elif shape == "カスタム画像":
-                image_path = self.crosshair_image_path
-
-            if image_path and os.path.exists(image_path):
-                pixmap = QtGui.QPixmap(image_path)
-                if not pixmap.isNull():
-                    target_size = self.size * 2
-                    target_rect = QtCore.QRect(self.center_x - self.size, self.center_y - self.size, target_size, target_size)
-                    painter.drawPixmap(target_rect, pixmap)
-            else:
-                color = QtGui.QColor(self.crosshair_color)
-                color.setAlphaF(ch_alpha)
-                pen = QtGui.QPen(color, 2)
-                painter.setPen(pen)
-                if shape == "十字":
-                    gap = 10
-                    painter.drawLine(self.center_x - self.size, self.center_y, self.center_x - gap, self.center_y)
-                    painter.drawLine(self.center_x + gap, self.center_y, self.center_x + self.size, self.center_y)
-                    painter.drawLine(self.center_x, self.center_y - self.size, self.center_x, self.center_y - gap)
-                    painter.drawLine(self.center_x, self.center_y + gap, self.center_x, self.center_y + self.size)
-                elif shape == "十字 (ギャップなし)":
-                    painter.drawLine(self.center_x - self.size, self.center_y, self.center_x + self.size, self.center_y)
-                    painter.drawLine(self.center_x, self.center_y - self.size, self.center_x, self.center_y + self.size)
-                elif shape == "円":
-                    painter.setBrush(QtCore.Qt.NoBrush)
-                    rect = QtCore.QRect(self.center_x - self.size, self.center_y - self.size, self.size * 2, self.size * 2)
-                    painter.drawEllipse(rect)
-                elif shape == "矢印 (シェブロン)":
-                    arrow_size = self.size // 2
-                    points = [
-                        QtCore.QPoint(self.center_x - arrow_size, self.center_y + arrow_size),
-                        QtCore.QPoint(self.center_x, self.center_y),
-                        QtCore.QPoint(self.center_x + arrow_size, self.center_y + arrow_size)
-                    ]
-                    painter.drawPolyline(QtGui.QPolygon(points))
 
         if self.dot_visible and self.dot_radius > 0:
             painter.setOpacity(1.0) # Reset opacity for dot
@@ -374,7 +410,8 @@ class CrosshairOverlay(QtWidgets.QWidget):
     def save_global_config(self):
         main_config = {
             "last_selected": self.last_selected_preset, 
-            "preset_folder": self.preset_folder,
+            "overall_preset_folder": self.overall_preset_folder,
+            "shape_preset_folder": self.shape_preset_folder,
             "monitor_apex": self.monitor_apex,
             "selected_monitor_index": self.selected_monitor_index,
             "toggle_hotkey": self.toggle_hotkey
