@@ -14,6 +14,7 @@ class Canvas(QtWidgets.QWidget):
         self.current_tool = "pencil" # "pencil", "eraser", "line", "circle"
         self.start_pos = None # 直線・円ツールの開始位置
         self.current_mouse_pos = None # 直線・円ツールの現在のマウス位置 (プレビュー用)
+        self.brush_size = 1 # ブラシサイズ (1ピクセル単位)
 
         self.undo_stack = []
         self.redo_stack = []
@@ -29,6 +30,9 @@ class Canvas(QtWidgets.QWidget):
         self.pen_color = color
         self.is_eraser = False # Color selection implies using the pen
         self.current_tool = "pencil" # 色選択時はペンツールに切り替える
+
+    def set_brush_size(self, size):
+        self.brush_size = max(1, min(size, 10)) # サイズを1から10の範囲に制限
 
     def get_pixel_data(self):
         """Returns a list of non-transparent pixels for saving."""
@@ -92,16 +96,15 @@ class Canvas(QtWidgets.QWidget):
     def _paint_pixel(self, pos):
         cell_size = self.width() / self.GRID_SIZE
         grid_x = int(pos.x() // cell_size)
-        grid_y = int(pos(pos).y() // cell_size)
+        grid_y = int(pos.y() // cell_size)
 
         if 0 <= grid_x < self.GRID_SIZE and 0 <= grid_y < self.GRID_SIZE:
-            # 変更前の状態を保存
             old_color = self.grid_data[grid_y][grid_x]
             new_color = None if self.is_eraser else self.pen_color
 
-            if old_color != new_color:
-                self.grid_data[grid_y][grid_x] = new_color
-                self.update()
+            # ブラシサイズに応じてピクセルをセット
+            self._set_pixel_with_brush(grid_x, grid_y, new_color)
+            self.update()
 
     def mousePressEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
@@ -144,29 +147,89 @@ class Canvas(QtWidgets.QWidget):
             self.current_mouse_pos = None # プレビューをクリア
             self.update() # 最終描画を反映
 
-    def _draw_line(self, p1, p2, color):
-        """Bresenham's line algorithm"""
-        x1, y1 = p1.x(), p1.y()
-        x2, y2 = p2.x(), p2.y()
+        def _draw_line(self, p1, p2, color):
+            """Bresenham's line algorithm"""
+            x1, y1 = p1.x(), p1.y()
+            x2, y2 = p2.x(), p2.y()
 
-        dx = abs(x2 - x1)
-        dy = abs(y2 - y1)
-        sx = 1 if x1 < x2 else -1
-        sy = 1 if y1 < y2 else -1
-        err = dx - dy
+            dx = abs(x2 - x1)
+            dy = abs(y2 - y1)
+            sx = 1 if x1 < x2 else -1
+            sy = 1 if y1 < y2 else -1
+            err = dx - dy
 
-        while True:
-            if 0 <= x1 < self.GRID_SIZE and 0 <= y1 < self.GRID_SIZE:
-                self.grid_data[y1][x1] = color
-            if x1 == x2 and y1 == y2:
-                break
-            e2 = 2 * err
-            if e2 > -dy:
-                err -= dy
-                x1 += sx
-            if e2 < dx:
-                err += dx
-                y1 += sy
+            while True:
+                self._set_pixel_with_brush(x1, y1, color)
+                if x1 == x2 and y1 == y2:
+                    break
+                e2 = 2 * err
+                if e2 > -dy:
+                    err -= dy
+                    x1 += sx
+                if e2 < dx:
+                    err += dx
+                    y1 += sy
+
+    def _draw_circle(self, center, end_point, color):
+        """Midpoint circle algorithm"""
+        xc, yc = center.x(), center.y()
+        radius = int(math.sqrt((end_point.x() - xc)**2 + (end_point.y() - yc)**2))
+
+        x = radius
+        y = 0
+        err = 0
+
+        while x >= y:
+            self._draw_circle_pixels(xc, yc, x, y, color)
+            y += 1
+            err += 1 + 2*y
+            if 2*(err-x) + 1 > 0:
+                x -= 1
+                err += 1 - 2*x
+
+    def _draw_circle_pixels(self, xc, yc, x, y, color):
+        self._set_pixel_with_brush(xc + x, yc + y, color)
+        self._set_pixel_with_brush(xc - x, yc + y, color)
+        self._set_pixel_with_brush(xc + x, yc - y, color)
+        self._set_pixel_with_brush(xc - x, yc - y, color)
+        self._set_pixel_with_brush(xc + y, yc + x, color)
+        self._set_pixel_with_brush(xc - y, yc + x, color)
+        self._set_pixel_with_brush(xc + y, yc - x, color)
+        self._set_pixel_with_brush(xc - y, yc - x, color)
+
+    def _set_pixel_with_brush(self, x, y, color):
+        """指定された座標を中心にブラシサイズでピクセルをセットする"""
+        half_brush = self.brush_size // 2
+        for py in range(y - half_brush, y + half_brush + 1):
+            for px in range(x - half_brush, x + half_brush + 1):
+                if 0 <= px < self.GRID_SIZE and 0 <= py < self.GRID_SIZE:
+                    self.grid_data[py][px] = color
+
+    def push_state(self):
+        """現在のキャンバスの状態をundoスタックに保存する"""
+        if len(self.undo_stack) >= self.MAX_HISTORY:
+            self.undo_stack.pop(0) # 古い履歴を削除
+        self.undo_stack.append(copy.deepcopy(self.grid_data))
+        self.redo_stack.clear() # 新しい操作が行われたらredoスタックはクリア
+
+    def apply_state(self, state):
+        """指定された状態をキャンバスに適用する"""
+        self.grid_data = copy.deepcopy(state)
+        self.update()
+
+    def undo(self):
+        """一つ前の状態に戻す"""
+        if self.undo_stack:
+            self.redo_stack.append(copy.deepcopy(self.grid_data))
+            self.apply_state(self.undo_stack.pop())
+
+    def redo(self):
+        """やり直し操作を実行する"""
+        if self.redo_stack:
+            self.undo_stack.append(copy.deepcopy(self.grid_data))
+            self.apply_state(self.redo_stack.pop())
+
+    #def push_state(self):
 
     def _draw_circle(self, center, end_point, color):
         """Midpoint circle algorithm"""

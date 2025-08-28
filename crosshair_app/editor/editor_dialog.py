@@ -18,13 +18,13 @@ class EditorDialog(QtWidgets.QDialog):
         left_panel_layout = QtWidgets.QVBoxLayout()
         left_panel_layout.setSpacing(15)
 
+        # Canvas (Right Panel)を先に作成
+        self.canvas = Canvas(self)
+
         # Left Panel Widgets
         self._create_tools_group(left_panel_layout)
         self._create_palette_group(left_panel_layout)
         left_panel_layout.addStretch()
-
-        # Canvas (Right Panel)
-        self.canvas = Canvas(self)
 
         # Assemble main layout
         self.main_layout.addLayout(left_panel_layout)
@@ -89,6 +89,15 @@ class EditorDialog(QtWidgets.QDialog):
         parent_layout.addWidget(tools_group)
 
     def _create_palette_group(self, parent_layout):
+        brush_size_group = QtWidgets.QGroupBox("ブラシサイズ")
+        brush_size_layout = QtWidgets.QHBoxLayout(brush_size_group)
+        self.brush_size_spinbox = QtWidgets.QSpinBox()
+        self.brush_size_spinbox.setRange(1, 10) # 1から10ピクセルまで
+        self.brush_size_spinbox.setValue(self.canvas.brush_size) # 初期値
+        self.brush_size_spinbox.valueChanged.connect(self.canvas.set_brush_size)
+        brush_size_layout.addWidget(self.brush_size_spinbox)
+        parent_layout.addWidget(brush_size_group)
+
         palette_group = QtWidgets.QGroupBox("カラーパレット")
         palette_layout = QtWidgets.QGridLayout(palette_group)
         palette_layout.setSpacing(4)
