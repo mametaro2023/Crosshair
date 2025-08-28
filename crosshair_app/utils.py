@@ -85,6 +85,7 @@ class GameMonitorThread(threading.Thread):
                 self.overlay.panel.on_game_state_changed(current_state)
                 last_state = current_state
             time.sleep(2)
+        self.overlay.panel.on_monitor_thread_finished()
 
     def stop(self):
         self.running = False

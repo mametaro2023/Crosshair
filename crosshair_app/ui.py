@@ -595,15 +595,12 @@ class ControlPanel(QtWidgets.QWidget):
 
             if self.overlay.game_monitor_thread is None:
                 self.overlay.game_monitor_thread = utils.GameMonitorThread(utils.GAME_PROCESS_NAME, self.overlay)
-                self.overlay.game_monitor_thread.gameRunning.connect(self.on_game_state_changed)
-                self.overlay.game_monitor_thread.finished.connect(self.on_monitor_thread_finished)
                 self.overlay.game_monitor_thread.start()
                 print("Apex Legendsの監視を開始しました。")
         else:
             self.master_toggle_btn.setToolTip("クロスヘアとドットの表示をまとめてON/OFFします")
             if self.overlay.game_monitor_thread is not None:
                 self.overlay.game_monitor_thread.stop()
-                self.overlay.game_monitor_thread.quit()
                 print("Apex Legendsの監視を停止しています...")
 
     @QtCore.pyqtSlot()
