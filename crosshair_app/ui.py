@@ -19,10 +19,6 @@ class ControlPanel(QtWidgets.QWidget):
 
         self.setObjectName("controlPanel")
         self.setAttribute(QtCore.Qt.WA_StyledBackground, True)
-        self.setAttribute(QtCore.Qt.WA_TranslucentBackground, False)
-        # Opaque 描画でゴースト抑制
-        self.setAttribute(QtCore.Qt.WA_OpaquePaintEvent, True)
-        self.setAttribute(QtCore.Qt.WA_TranslucentBackground, False) # この行を追加
 
         shadow = QtWidgets.QGraphicsDropShadowEffect(self)
         shadow.setBlurRadius(24)
@@ -67,9 +63,16 @@ class ControlPanel(QtWidgets.QWidget):
         presets_layout.addWidget(self.save_btn)
         main_layout.addWidget(presets_group)
 
-        # --- General Settings Group ---
-        general_group = QtWidgets.QGroupBox("全般設定")
-        general_layout = QtWidgets.QVBoxLayout(general_group)
+        # --- Tab Widget for Settings ---
+        tab_widget = QtWidgets.QTabWidget()
+        tab_widget.setObjectName("settingsTab")
+        main_layout.addWidget(tab_widget)
+
+        # --- General Settings Tab ---
+        general_tab = QtWidgets.QWidget()
+        general_layout = QtWidgets.QVBoxLayout(general_tab)
+        general_layout.setContentsMargins(10, 15, 10, 10)
+        general_layout.setSpacing(12)
         
         monitor_layout = QtWidgets.QHBoxLayout()
         monitor_label = QtWidgets.QLabel("表示モニター:")
@@ -91,11 +94,14 @@ class ControlPanel(QtWidgets.QWidget):
         self.fade_on_shoot_checkbox = QtWidgets.QCheckBox("射撃中はクロスヘアを薄くする")
         self.fade_on_shoot_checkbox.toggled.connect(self.toggle_fade_on_shoot)
         general_layout.addWidget(self.fade_on_shoot_checkbox)
-        main_layout.addWidget(general_group)
+        general_layout.addStretch()
+        tab_widget.addTab(general_tab, "全般")
 
-        # --- Crosshair Group ---
-        ch_group = QtWidgets.QGroupBox("クロスヘア")
-        ch_layout = QtWidgets.QVBoxLayout(ch_group)
+        # --- Crosshair Tab ---
+        ch_tab = QtWidgets.QWidget()
+        ch_layout = QtWidgets.QVBoxLayout(ch_tab)
+        ch_layout.setContentsMargins(10, 15, 10, 10)
+        ch_layout.setSpacing(12)
 
         self.crosshair_btn = QtWidgets.QCheckBox("クロスヘアを表示")
         self.crosshair_btn.toggled.connect(self.toggle_crosshair_button)
@@ -132,11 +138,14 @@ class ControlPanel(QtWidgets.QWidget):
         alpha_layout.addWidget(self.alpha_slider)
         alpha_layout.addWidget(self.alpha_value)
         ch_layout.addLayout(alpha_layout)
-        main_layout.addWidget(ch_group)
+        ch_layout.addStretch()
+        tab_widget.addTab(ch_tab, "クロスヘア")
 
-        # --- Dot Group ---
-        dot_group = QtWidgets.QGroupBox("ドット")
-        dot_layout = QtWidgets.QVBoxLayout(dot_group)
+        # --- Dot Tab ---
+        dot_tab = QtWidgets.QWidget()
+        dot_layout = QtWidgets.QVBoxLayout(dot_tab)
+        dot_layout.setContentsMargins(10, 15, 10, 10)
+        dot_layout.setSpacing(12)
 
         self.dot_btn = QtWidgets.QCheckBox("ドットを表示")
         self.dot_btn.toggled.connect(self.toggle_dot_button)
@@ -166,14 +175,22 @@ class ControlPanel(QtWidgets.QWidget):
         dot_alpha_layout.addWidget(self.dot_alpha_slider)
         dot_alpha_layout.addWidget(self.dot_alpha_value)
         dot_layout.addLayout(dot_alpha_layout)
-        main_layout.addWidget(dot_group)
+        dot_layout.addStretch()
+        tab_widget.addTab(dot_tab, "ドット")
 
-        # --- Keys Group ---
-        keys_group = QtWidgets.QGroupBox("キー無効化")
-        keys_layout = QtWidgets.QVBoxLayout(keys_group)
+        # --- Keys Tab ---
+        keys_tab = QtWidgets.QWidget()
+        keys_layout = QtWidgets.QVBoxLayout(keys_tab)
+        keys_layout.setContentsMargins(10, 15, 10, 10)
+        keys_layout.setSpacing(12)
+        
+        disabled_keys_group = QtWidgets.QGroupBox("現在無効化中のキー")
+        disabled_keys_layout = QtWidgets.QVBoxLayout(disabled_keys_group)
         self.disabled_keys_label = QtWidgets.QLabel("なし")
         self.disabled_keys_label.setWordWrap(True)
-        keys_layout.addWidget(self.disabled_keys_label, 1)
+        disabled_keys_layout.addWidget(self.disabled_keys_label)
+        keys_layout.addWidget(disabled_keys_group)
+
         keys_btn_layout = QtWidgets.QHBoxLayout()
         disable_btn = QtWidgets.QPushButton("無効化キーを追加")
         disable_btn.clicked.connect(self.disable_key_gui)
@@ -182,17 +199,12 @@ class ControlPanel(QtWidgets.QWidget):
         keys_btn_layout.addWidget(disable_btn)
         keys_btn_layout.addWidget(enable_btn)
         keys_layout.addLayout(keys_btn_layout)
+        
         enable_all_btn = QtWidgets.QPushButton("すべてのキーを有効化")
         enable_all_btn.clicked.connect(self.enable_all_keys_gui)
         keys_layout.addWidget(enable_all_btn)
-        main_layout.addWidget(keys_group)
-
-        main_layout.addStretch()
-
-        # GroupBox の背景再描画を確実にし、半透明時の残像を抑える
-        for _gb in (presets_group, general_group, ch_group, dot_group, keys_group):
-            _gb.setAttribute(QtCore.Qt.WA_StyledBackground, True)
-            _gb.setAutoFillBackground(True)
+        keys_layout.addStretch()
+        tab_widget.addTab(keys_tab, "キー無効化")
 
         # --- Finalize ---
         self.update_control_panel_ui()
@@ -208,22 +220,52 @@ class ControlPanel(QtWidgets.QWidget):
 
     def make_color_button(self, label_text, getter, setter, update_callback):
         layout_ = QtWidgets.QHBoxLayout()
-        button = QtWidgets.QPushButton(label_text)
-        square = QtWidgets.QLabel()
-        square.setFixedSize(24, 24)
-        square.setStyleSheet(f"background-color: {getter()}; border: 1px solid #50555c; border-radius: 4px;")
+        label = QtWidgets.QLabel(label_text)
+        
+        color_button = QtWidgets.QPushButton()
+        color_button.setFixedSize(90, 28)
+        color_button.setToolTip("クリックして色を選択")
+        
+        def update_color(color_hex):
+            color_button.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: {color_hex};
+                    border: 1px solid #4d4d4d;
+                    border-radius: 4px;
+                }}
+                QPushButton:hover {{
+                    border-color: #007acc;
+                }}
+            """)
+            color_button.setText(color_hex.upper())
+            qcolor = QtGui.QColor(color_hex)
+            # 輝度に基づいてテキスト色を決定
+            if qcolor.lightness() > 127:
+                color_button.setStyleSheet(color_button.styleSheet() + "QPushButton { color: #000000; font-weight: bold; }")
+            else:
+                color_button.setStyleSheet(color_button.styleSheet() + "QPushButton { color: #ffffff; font-weight: bold; }")
+        
+        # color_buttonオブジェクトに更新関数をアタッチ
+        color_button.update_color = update_color
+
         def pick_color():
-            color = QtWidgets.QColorDialog.getColor(QtGui.QColor(getter()), self, "色を選択")
-            if color.isValid(): 
-                setter(color.name())
-                square.setStyleSheet(f"background-color: {color.name()}; border: 1px solid #50555c; border-radius: 4px;")
+            current_color = QtGui.QColor(getter())
+            color = QtWidgets.QColorDialog.getColor(current_color, self, "色を選択")
+            if color.isValid():
+                color_name = color.name()
+                setter(color_name)
+                color_button.update_color(color_name)
                 update_callback()
                 self.schedule_overlay_update()
-        button.clicked.connect(pick_color)
-        layout_.addWidget(button)
+
+        color_button.clicked.connect(pick_color)
+        color_button.update_color(getter()) # 初期色を設定
+
+        layout_.addWidget(label)
         layout_.addStretch()
-        layout_.addWidget(square)
-        return layout_, square
+        layout_.addWidget(color_button)
+        
+        return layout_, color_button
 
     def closeEvent(self, event):
         if self.overlay.is_dirty:
@@ -481,9 +523,9 @@ class ControlPanel(QtWidgets.QWidget):
 
         self.dot_slider.setValue(self.overlay.dot_radius * 2)
         self.dot_value.setText(str(self.overlay.dot_radius * 2))
-        self.ch_color_square.setStyleSheet(f"background-color: {self.overlay.crosshair_color}; border: 1px solid #50555c; border-radius: 4px;")
-        self.dot_out_color_square.setStyleSheet(f"background-color: {self.overlay.dot_outer_color}; border: 1px solid #50555c; border-radius: 4px;")
-        self.dot_in_color_square.setStyleSheet(f"background-color: {self.overlay.dot_inner_color}; border: 1px solid #50555c; border-radius: 4px;")
+        self.ch_color_square.update_color(self.overlay.crosshair_color)
+        self.dot_out_color_square.update_color(self.overlay.dot_outer_color)
+        self.dot_in_color_square.update_color(self.overlay.dot_inner_color)
         self.alpha_slider.setValue(int(self.overlay.crosshair_alpha * 100))
         self.alpha_value.setText(f"{self.overlay.crosshair_alpha:.2f}")
         self.dot_alpha_slider.setValue(int(self.overlay.dot_alpha * 100))
@@ -611,6 +653,6 @@ class ControlPanel(QtWidgets.QWidget):
     # 背景を毎回明示的に塗りつぶして残像を防止
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
-        painter.fillRect(self.rect(), QtGui.QColor(37, 41, 45))  # Window と同色でクリア
+        painter.fillRect(self.rect(), QtGui.QColor(30, 30, 30))
         super().paintEvent(event)
 

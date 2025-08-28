@@ -336,7 +336,7 @@ def check_updates_thread(overlay):
 def gui_main():
     app = QtWidgets.QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(True)
-    theme.apply_dark_theme(app)
+    theme.apply_modern_dark_theme(app)
     
     screens = app.screens()
     overlay = CrosshairOverlay(screens)
