@@ -1,7 +1,7 @@
 import os
 import json
 
-APP_VERSION = "ver1.5.2"
+APP_VERSION = "ver1.5.3"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".crosshair_config.json")
 DEFAULT_PRESET_FOLDER = os.path.join(os.path.expanduser("~"), "Documents", "CrosshairPresets")
 PRESET_EXTENSION = ".mametaro"
@@ -20,7 +20,8 @@ def load_config():
         "fade_on_shoot": False,
         "last_selected": "デフォルト設定",
         "preset_folder": DEFAULT_PRESET_FOLDER,
-        "monitor_apex": False
+        "monitor_apex": False,
+        "toggle_hotkey": "ctrl+f1"
     }
     
     if not os.path.exists(CONFIG_FILE):

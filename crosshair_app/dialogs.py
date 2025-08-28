@@ -1,5 +1,6 @@
 from PyQt5 import QtCore, QtWidgets
 import keyboard
+import threading
 
 class SettingsDialog(QtWidgets.QDialog):
     def __init__(self, parent=None, preset_folder_path=""):
@@ -41,32 +42,38 @@ class KeyCaptureDialog(QtWidgets.QDialog):
         
         self.key_callback = key_callback
         self.captured_key = None
-        self.hook = None
 
         cancel_button = QtWidgets.QPushButton("キャンセル")
         cancel_button.clicked.connect(self.reject)
         self.layout().addWidget(cancel_button)
         self.resize(300, 100)
 
-    def _on_key_press(self, event):
-        key = event.name
+    def _capture_hotkey_thread(self):
+        # read_hotkeyは修飾キーを含むキーの組み合わせを文字列として返す
+        # suppress=Falseにすることで、他のアプリケーションへのキー入力を妨げない
+        hotkey = keyboard.read_hotkey(suppress=False)
         
-        if key == "enter":
+        if hotkey == "enter":
             QtCore.QMetaObject.invokeMethod(self, "_show_enter_error", QtCore.Qt.QueuedConnection)
+            # エラー表示後も入力を待機し続ける
+            self._capture_hotkey_thread()
             return
 
-        self.captured_key = key
+        self.captured_key = hotkey
         QtCore.QMetaObject.invokeMethod(self, "accept", QtCore.Qt.QueuedConnection)
-        return True
 
     @QtCore.pyqtSlot()
     def _show_enter_error(self):
-        QtWidgets.QMessageBox.information(self, "無効化不可", "Enterキーは無効化できません。")
+        QtWidgets.QMessageBox.information(self, "設定不可", "Enterキーはショートカットキーとして設定できません。")
 
     def exec_(self):
-        self.hook = keyboard.on_press(self._on_key_press, suppress=True)
+        # バックグラウンドスレッドでキー入力を待機
+        capture_thread = threading.Thread(target=self._capture_hotkey_thread, daemon=True)
+        capture_thread.start()
+        
         result = super().exec_()
-        keyboard.unhook(self.hook)
+        
+        # ダイアログが正常に閉じられた場合、コールバックを呼び出す
         if result == QtWidgets.QDialog.Accepted and self.key_callback and self.captured_key:
             self.key_callback(self.captured_key)
         return result

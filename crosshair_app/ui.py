@@ -35,6 +35,10 @@ class ControlPanel(QtWidgets.QWidget):
         menu_bar = QtWidgets.QMenuBar()
         settings_menu = menu_bar.addMenu("設定")
         settings_menu.addAction("保存先フォルダ...", self.open_settings)
+        self.hotkey_action = settings_menu.addAction("ショートカットキー設定...")
+        self.hotkey_action.triggered.connect(self.open_hotkey_settings)
+        self.update_hotkey_menu_text()
+
         settings_menu.addSeparator()
         self.startup_action = settings_menu.addAction("PC起動時に自動実行する")
         self.startup_action.setCheckable(True)
@@ -126,17 +130,22 @@ class ControlPanel(QtWidgets.QWidget):
         custom_image_layout.addWidget(self.custom_image_path_label, 1)
         ch_layout.addWidget(self.custom_image_widget)
 
+        # 色設定UIをコンテナウィジェットに格納
+        self.ch_color_widget = QtWidgets.QWidget()
         ch_color_layout, self.ch_color_square = self.make_color_button("色:", lambda: self.overlay.crosshair_color, self.set_crosshair_color, lambda: self.overlay.update())
-        ch_layout.addLayout(ch_color_layout)
+        ch_color_layout.setContentsMargins(0, 0, 0, 0)
+        self.ch_color_widget.setLayout(ch_color_layout)
+        ch_layout.addWidget(self.ch_color_widget)
 
         alpha_layout = QtWidgets.QHBoxLayout()
         self.alpha_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.alpha_slider.setRange(0, 100)
-        self.alpha_value = QtWidgets.QLabel()
+        self.alpha_value_edit = QtWidgets.QLineEdit()
+        self.alpha_value_edit.setFixedWidth(45)
         self.alpha_slider.valueChanged.connect(self.update_alpha)
         alpha_layout.addWidget(QtWidgets.QLabel("透明度:"))
         alpha_layout.addWidget(self.alpha_slider)
-        alpha_layout.addWidget(self.alpha_value)
+        alpha_layout.addWidget(self.alpha_value_edit)
         ch_layout.addLayout(alpha_layout)
         ch_layout.addStretch()
         tab_widget.addTab(ch_tab, "クロスヘア")
@@ -154,11 +163,12 @@ class ControlPanel(QtWidgets.QWidget):
         dotsize_layout = QtWidgets.QHBoxLayout()
         self.dot_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.dot_slider.setRange(0, 100)
-        self.dot_value = QtWidgets.QLabel()
+        self.dot_value_edit = QtWidgets.QLineEdit()
+        self.dot_value_edit.setFixedWidth(45)
         self.dot_slider.valueChanged.connect(self.update_dot_size)
         dotsize_layout.addWidget(QtWidgets.QLabel("サイズ:"))
         dotsize_layout.addWidget(self.dot_slider)
-        dotsize_layout.addWidget(self.dot_value)
+        dotsize_layout.addWidget(self.dot_value_edit)
         dot_layout.addLayout(dotsize_layout)
 
         dot_out_color_layout, self.dot_out_color_square = self.make_color_button("外枠の色:", lambda: self.overlay.dot_outer_color, self.set_dot_outer_color, lambda: self.overlay.update())
@@ -169,11 +179,12 @@ class ControlPanel(QtWidgets.QWidget):
         dot_alpha_layout = QtWidgets.QHBoxLayout()
         self.dot_alpha_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.dot_alpha_slider.setRange(0, 100)
-        self.dot_alpha_value = QtWidgets.QLabel()
+        self.dot_alpha_value_edit = QtWidgets.QLineEdit()
+        self.dot_alpha_value_edit.setFixedWidth(45)
         self.dot_alpha_slider.valueChanged.connect(self.update_dot_alpha)
         dot_alpha_layout.addWidget(QtWidgets.QLabel("透明度:"))
         dot_alpha_layout.addWidget(self.dot_alpha_slider)
-        dot_alpha_layout.addWidget(self.dot_alpha_value)
+        dot_alpha_layout.addWidget(self.dot_alpha_value_edit)
         dot_layout.addLayout(dot_alpha_layout)
         dot_layout.addStretch()
         tab_widget.addTab(dot_tab, "ドット")
@@ -214,9 +225,86 @@ class ControlPanel(QtWidgets.QWidget):
         if self.overlay.monitor_apex and utils.psutil:
             self.toggle_apex_monitoring(True)
 
+        self.alpha_value_edit.editingFinished.connect(self._on_alpha_input_finished)
+        self.dot_value_edit.editingFinished.connect(self._on_dot_size_input_finished)
+        self.dot_alpha_value_edit.editingFinished.connect(self._on_dot_alpha_input_finished)
+
+        # 最後にボタンの表示を更新して、ホットキー表示を確実に行う
+        self.update_master_toggle_button_ui()
+
         self.setWindowOpacity(0.0)
         self.animate_panel_show()
         self._pulse_once(self.save_btn, QtGui.QColor("#0078d7"))
+
+    def _on_alpha_input_finished(self):
+        original_value = self.overlay.crosshair_alpha
+        text = self.alpha_value_edit.text()
+        # 全角を半角に変換
+        text = text.translate(str.maketrans("０１２３４５６７８９．", "0123456789."))
+        try:
+            value = float(text)
+            # 小数点以下第3位を切り捨て
+            value = int(value * 100) / 100.0
+            # 上限・下限チェック
+            if value > 1.0: value = 1.0
+            if value < 0.0: value = 0.0
+            self.alpha_slider.setValue(int(value * 100))
+        except ValueError:
+            # 数字以外の文字が入力された場合は元の値に戻す
+            self.alpha_value_edit.setText(f"{original_value:.2f}")
+
+    def _on_dot_size_input_finished(self):
+        original_value = self.overlay.dot_radius * 2
+        text = self.dot_value_edit.text()
+        text = text.translate(str.maketrans("０１２３４５６７８９", "0123456789"))
+        try:
+            value = int(text)
+            if value > 100: value = 100
+            if value < 0: value = 0
+            self.dot_slider.setValue(value)
+        except ValueError:
+            self.dot_value_edit.setText(str(original_value))
+
+    def _on_dot_alpha_input_finished(self):
+        original_value = self.overlay.dot_alpha
+        text = self.dot_alpha_value_edit.text()
+        text = text.translate(str.maketrans("０１２３４５６７８９．", "0123456789."))
+        try:
+            value = float(text)
+            value = int(value * 100) / 100.0
+            if value > 1.0: value = 1.0
+            if value < 0.0: value = 0.0
+            self.dot_alpha_slider.setValue(int(value * 100))
+        except ValueError:
+            self.dot_alpha_value_edit.setText(f"{original_value:.2f}")
+
+    def open_hotkey_settings(self):
+        # ダイアログを開く前に、既存のホットキーを一時的に無効化
+        self.overlay.unregister_toggle_hotkey()
+
+        def on_key_selected(key):
+            # 新しいキーが選択されたら、それを設定する（内部で新しいホットキーが登録される）
+            self.overlay.set_toggle_hotkey(key)
+            self.overlay.save_global_config()
+            self.update_hotkey_menu_text()
+            self.update_master_toggle_button_ui() # ボタンのテキストを更新
+            QtWidgets.QMessageBox.information(self, "設定完了", f"表示切替ショートカットキーを '{key}' に設定しました。")
+
+        dlg = KeyCaptureDialog(self,
+                               message=f"新しいショートカットキーを押してください\n(現在の設定: {self.overlay.toggle_hotkey})",
+                               key_callback=on_key_selected)
+        
+        # ダイアログの実行結果を取得
+        result = dlg.exec_()
+
+        # もしダイアログがキャンセルされた場合（新しいキーが設定されなかった場合）、
+        # 元のホットキーを再度有効化する
+        if result == QtWidgets.QDialog.Rejected:
+            self.overlay.register_toggle_hotkey()
+
+    def update_hotkey_menu_text(self):
+        current_hotkey = self.overlay.toggle_hotkey
+        self.hotkey_action.setText(f"ショートカットキー設定... ({current_hotkey})")
 
     def make_color_button(self, label_text, getter, setter, update_callback):
         layout_ = QtWidgets.QHBoxLayout()
@@ -372,11 +460,12 @@ class ControlPanel(QtWidgets.QWidget):
         if not hasattr(self, 'master_toggle_btn'):
             return
 
+        hotkey_text = f"({self.overlay.toggle_hotkey})"
         if self.overlay.master_enabled:
-            self.master_toggle_btn.setText("オーバーレイ無効化")
+            self.master_toggle_btn.setText(f"オーバーレイ無効化 {hotkey_text}")
             self.master_toggle_btn.setObjectName("masterToggleButton")
         else:
-            self.master_toggle_btn.setText("オーバーレイ有効化")
+            self.master_toggle_btn.setText(f"オーバーレイ有効化 {hotkey_text}")
             self.master_toggle_btn.setObjectName("masterToggleButtonActive")
 
         if self.overlay.monitor_apex:
@@ -389,6 +478,9 @@ class ControlPanel(QtWidgets.QWidget):
 
     def toggle_master_visibility(self):
         self.set_master_enabled(not self.overlay.master_enabled, manual_toggle=True)
+
+    def toggle_master_visibility(self):
+        self.overlay.toggle_master_visibility()
 
     def toggle_startup(self, checked):
         path = utils.get_executable_path()
@@ -503,8 +595,13 @@ class ControlPanel(QtWidgets.QWidget):
         self.monitor_selection_box.setCurrentIndex(self.overlay.selected_monitor_index)
         self.crosshair_btn.setChecked(self.overlay.crosshair_visible)
         self.dot_btn.setChecked(self.overlay.dot_visible)
-        self.shape_box.setCurrentText(self.overlay.crosshair_shape)
         
+        shape = self.overlay.crosshair_shape
+        self.shape_box.setCurrentText(shape)
+        
+        is_image_based = shape in ["MAME", "カスタム画像"]
+        self.ch_color_widget.setVisible(not is_image_based)
+
         is_custom_image = self.overlay.crosshair_shape == "カスタム画像"
         self.custom_image_widget.setVisible(is_custom_image)
         if is_custom_image:
@@ -515,14 +612,14 @@ class ControlPanel(QtWidgets.QWidget):
                 self.custom_image_path_label.setText("選択されていません")
 
         self.dot_slider.setValue(self.overlay.dot_radius * 2)
-        self.dot_value.setText(str(self.overlay.dot_radius * 2))
+        self.dot_value_edit.setText(str(self.overlay.dot_radius * 2))
         self.ch_color_square.update_color(self.overlay.crosshair_color)
         self.dot_out_color_square.update_color(self.overlay.dot_outer_color)
         self.dot_in_color_square.update_color(self.overlay.dot_inner_color)
         self.alpha_slider.setValue(int(self.overlay.crosshair_alpha * 100))
-        self.alpha_value.setText(f"{self.overlay.crosshair_alpha:.2f}")
+        self.alpha_value_edit.setText(f"{self.overlay.crosshair_alpha:.2f}")
         self.dot_alpha_slider.setValue(int(self.overlay.dot_alpha * 100))
-        self.dot_alpha_value.setText(f"{self.overlay.dot_alpha:.2f}")
+        self.dot_alpha_value_edit.setText(f"{self.overlay.dot_alpha:.2f}")
         self.fade_on_shoot_checkbox.setChecked(self.overlay.fade_on_shoot_enabled)
         self.disabled_keys_label.setText(", ".join(self.overlay.disabled_keys) if self.overlay.disabled_keys else "なし")
 
@@ -569,6 +666,9 @@ class ControlPanel(QtWidgets.QWidget):
 
     def update_crosshair_shape(self, shape_text):
         self.overlay.crosshair_shape = shape_text
+        
+        is_image_based = shape_text in ["MAME", "カスタム画像"]
+        self.ch_color_widget.setVisible(not is_image_based)
         self.custom_image_widget.setVisible(shape_text == "カスタム画像")
         
         if shape_text == "MAME":
@@ -589,19 +689,19 @@ class ControlPanel(QtWidgets.QWidget):
 
     def update_dot_size(self, val): 
         self.overlay.dot_radius = val // 2
-        self.dot_value.setText(str(val))
+        self.dot_value_edit.setText(str(val))
         self.schedule_overlay_update()
 
     def update_alpha(self, val): 
         alpha = round(val / 100, 2)
         self.overlay.crosshair_alpha = alpha
-        self.alpha_value.setText(f"{alpha:.2f}")
+        self.alpha_value_edit.setText(f"{alpha:.2f}")
         self.schedule_overlay_update()
 
     def update_dot_alpha(self, val): 
         alpha = round(val / 100, 2)
         self.overlay.dot_alpha = alpha
-        self.dot_alpha_value.setText(f"{self.overlay.dot_alpha:.2f}")
+        self.dot_alpha_value_edit.setText(f"{self.overlay.dot_alpha:.2f}")
         self.schedule_overlay_update()
 
     def toggle_fade_on_shoot(self, checked):

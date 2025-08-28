@@ -18,6 +18,8 @@ class CrosshairOverlay(QtWidgets.QWidget):
     update_check_done = QtCore.pyqtSignal(dict)
     # ダウンロード進捗シグナル
     download_progress = QtCore.pyqtSignal(int)
+    # 表示切替シグナル（スレッドセーフなUI更新のため）
+    master_visibility_changed = QtCore.pyqtSignal()
 
     def __init__(self, screens):
         super().__init__()
@@ -30,6 +32,7 @@ class CrosshairOverlay(QtWidgets.QWidget):
         self.selected_monitor_index = 0
         self.center_x = 0
         self.center_y = 0
+        self.toggle_hotkey = None
 
         self.setWindowFlags(
             QtCore.Qt.FramelessWindowHint |
@@ -50,6 +53,10 @@ class CrosshairOverlay(QtWidgets.QWidget):
         loaded_config = config.load_config()
         self.monitor_apex = loaded_config.get("monitor_apex", False)
         self.selected_monitor_index = loaded_config.get("selected_monitor_index", 0)
+
+        # ホットキーの設定
+        loaded_toggle_hotkey = loaded_config.get("toggle_hotkey", "ctrl+f1")
+        self.set_toggle_hotkey(loaded_toggle_hotkey)
 
         if self.monitor_apex:
             self.master_enabled = False
@@ -78,6 +85,7 @@ class CrosshairOverlay(QtWidgets.QWidget):
         
         self.update_check_done.connect(self.show_update_dialog)
         self.download_progress.connect(self.update_progress_dialog)
+        self.master_visibility_changed.connect(self._update_ui_for_visibility_change)
 
     def _set_dirty_and_update_display(self):
         if not self.is_dirty:
@@ -264,6 +272,51 @@ class CrosshairOverlay(QtWidgets.QWidget):
         self.download_thread = threading.Thread(target=self.download_worker, args=(download_url,), daemon=True)
         self.download_thread.start()
 
+    def toggle_master_visibility(self):
+        """ホットキーまたはボタンから呼び出される"""
+        self.master_enabled = not self.master_enabled
+        self.update() # オーバーレイ自体の再描画 (これはスレッドセーフ)
+        self.master_visibility_changed.emit() # UI更新のためにシグナルを発行
+
+    @QtCore.pyqtSlot()
+    def _update_ui_for_visibility_change(self):
+        """GUIスレッドで実行されるスロット"""
+        if hasattr(self, 'panel'):
+            self.panel.update_master_toggle_button_ui()
+
+    def set_toggle_hotkey(self, new_hotkey):
+        if self.toggle_hotkey:
+            try:
+                keyboard.remove_hotkey(self.toggle_hotkey)
+            except (KeyError, AttributeError):
+                pass
+        self.toggle_hotkey = new_hotkey
+        try:
+            keyboard.add_hotkey(self.toggle_hotkey, self.toggle_master_visibility)
+            print(f"オーバーレイ表示切替ホットキーを '{self.toggle_hotkey}' に設定しました。")
+        except Exception as e:
+            print(f"ホットキー '{self.toggle_hotkey}' の登録に失敗: {e}")
+
+    def unregister_toggle_hotkey(self):
+        """ホットキーを一時的に登録解除する"""
+        if self.toggle_hotkey:
+            try:
+                keyboard.remove_hotkey(self.toggle_hotkey)
+                print(f"ホットキー '{self.toggle_hotkey}' を一時的に無効化しました。")
+            except KeyError:
+                pass # すでに解除されている場合は何もしない
+
+    def register_toggle_hotkey(self):
+        """ホットキーを再度登録する"""
+        if self.toggle_hotkey:
+            try:
+                keyboard.add_hotkey(self.toggle_hotkey, self.toggle_master_visibility)
+                print(f"ホットキー '{self.toggle_hotkey}' を再度有効化しました。")
+            except (ValueError, KeyError): # すでに登録されている場合がある
+                pass
+            except Exception as e:
+                print(f"ホットキー '{self.toggle_hotkey}' の再登録に失敗: {e}")
+
     @QtCore.pyqtSlot(int)
     def update_progress_dialog(self, value):
         if hasattr(self, 'progress_dialog') and self.progress_dialog.isVisible():
@@ -323,13 +376,19 @@ class CrosshairOverlay(QtWidgets.QWidget):
             "last_selected": self.last_selected_preset, 
             "preset_folder": self.preset_folder,
             "monitor_apex": self.monitor_apex,
-            "selected_monitor_index": self.selected_monitor_index
+            "selected_monitor_index": self.selected_monitor_index,
+            "toggle_hotkey": self.toggle_hotkey
         }
         config.save_global_config(main_config)
 
     def clean_up(self):
         self.mouse_listener.stop()
         self.enable_all_keys()
+        if self.toggle_hotkey:
+            try:
+                keyboard.remove_hotkey(self.toggle_hotkey)
+            except (KeyError, AttributeError):
+                pass
         self.save_global_config()
 
 def check_updates_thread(overlay):
