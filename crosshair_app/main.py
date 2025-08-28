@@ -64,8 +64,7 @@ class CrosshairOverlay(QtWidgets.QWidget):
             "dot_inner_color": "#000000", "disabled_keys": [],
             "crosshair_alpha": 1.0, "dot_alpha": 1.0,
             "crosshair_shape": "十字",
-            "crosshair_image_path": None,
-            "selected_monitor_index": self.selected_monitor_index
+            "crosshair_image_path": None
         }
         self.last_selected_preset = loaded_config.get("last_selected", "デフォルト設定")
         self.presets = {"デフォルト設定": self.default_config}
@@ -124,7 +123,6 @@ class CrosshairOverlay(QtWidgets.QWidget):
         self.fade_on_shoot_enabled = config_data.get("fade_on_shoot", False) 
         self.crosshair_shape = config_data.get("crosshair_shape", "十字")
         self.crosshair_image_path = config_data.get("crosshair_image_path", None)
-        self.selected_monitor_index = config_data.get("selected_monitor_index", self.selected_monitor_index)
         self.update()
 
     def get_config(self):
@@ -140,8 +138,7 @@ class CrosshairOverlay(QtWidgets.QWidget):
             "dot_alpha": self.dot_alpha,
             "fade_on_shoot": self.fade_on_shoot_enabled,
             "crosshair_shape": self.crosshair_shape,
-            "crosshair_image_path": self.crosshair_image_path,
-            "selected_monitor_index": self.selected_monitor_index
+            "crosshair_image_path": self.crosshair_image_path
         }
 
     def paintEvent(self, event):
@@ -303,6 +300,19 @@ class CrosshairOverlay(QtWidgets.QWidget):
             QtCore.QMetaObject.invokeMethod(self.progress_dialog, "close", QtCore.Qt.QueuedConnection)
             print("ダウンロードに失敗しました。")
             QtWidgets.QMessageBox.critical(self.panel, "アップデートエラー", "ダウンロードに失敗しました。")
+
+    def restart_application(self):
+        """アプリケーションを再起動する"""
+        self.clean_up()
+        
+        if hasattr(self, 'panel'):
+            self.panel.close()
+
+        try:
+            os.execv(sys.executable, ['python'] + sys.argv)
+        except Exception as e:
+            print(f"再起動に失敗しました: {e}")
+            QtWidgets.QMessageBox.critical(self.panel, "再起動失敗", f"アプリケーションの再起動に失敗しました。\n{e}")
 
     def save_monitor_selection(self, index):
         self.selected_monitor_index = index

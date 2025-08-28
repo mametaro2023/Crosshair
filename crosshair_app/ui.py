@@ -543,16 +543,37 @@ class ControlPanel(QtWidgets.QWidget):
             msg_box.setText("モニター設定を保存しました。")
             msg_box.setInformativeText("アプリケーションを再起動すると、選択したモニターで表示されます。")
             msg_box.setWindowTitle("再起動が必要です")
-            msg_box.setStandardButtons(QtWidgets.QMessageBox.Ok)
+            restart_button = msg_box.addButton("今すぐ再起動", QtWidgets.QMessageBox.AcceptRole)
+            msg_box.addButton("後で", QtWidgets.QMessageBox.RejectRole)
+            
+            # テキスト部分のラベル(qt_msgbox_label)にのみスタイルを適用
+            msg_box.setStyleSheet("QLabel#qt_msgbox_label { min-width: 310px; }")
+
             msg_box.exec_()
+
+            if msg_box.clickedButton() == restart_button:
+                self.overlay.restart_application()
 
     def toggle_crosshair_button(self, checked): 
         self.overlay.crosshair_visible = checked
         self.schedule_overlay_update()
 
+    @QtCore.pyqtSlot()
+    def show_download_complete_message(self):
+        QtWidgets.QMessageBox.information(self, "ダウンロード完了", "mame.png のダウンロードが完了しました。")
+        self.schedule_overlay_update()
+
+    @QtCore.pyqtSlot(str)
+    def show_download_error_message(self, error_message):
+        QtWidgets.QMessageBox.warning(self, "ダウンロード失敗", f"mame.png のダウンロードに失敗しました。\n{error_message}")
+
     def update_crosshair_shape(self, shape_text):
         self.overlay.crosshair_shape = shape_text
         self.custom_image_widget.setVisible(shape_text == "カスタム画像")
+        
+        if shape_text == "MAME":
+            utils.download_mame_png_if_missing(self)
+
         self.schedule_overlay_update()
 
     def select_custom_image(self):

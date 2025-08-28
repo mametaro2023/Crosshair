@@ -7,6 +7,9 @@ from urllib import request
 import tempfile # 追加
 import subprocess # 追加
 import zipfile # 追加
+from PyQt5 import QtCore, QtWidgets
+import ctypes
+from packaging.version import Version
 
 try:
     import psutil
@@ -69,6 +72,46 @@ def is_admin():
     except:
         return False
 
+def download_mame_png_if_missing(parent_widget=None):
+    """mame.pngが存在しない場合にGitHubからダウンロードする"""
+    if os.path.exists("mame.png"):
+        return
+
+    def download_task(msg_box_to_close=None):
+        url = "https://raw.githubusercontent.com/mametaro2023/Crosshair/main/mame.png"
+        try:
+            with request.urlopen(url) as response, open("mame.png", 'wb') as out_file:
+                if response.status == 200:
+                    out_file.write(response.read())
+                    print("mame.png のダウンロードが完了しました。")
+                    if parent_widget:
+                        QtCore.QMetaObject.invokeMethod(parent_widget, "show_download_complete_message", QtCore.Qt.QueuedConnection)
+                else:
+                    raise Exception(f"サーバーエラー: {response.status}")
+        except Exception as e:
+            print(f"mame.png のダウンロードに失敗しました: {e}")
+            if parent_widget:
+                QtCore.QMetaObject.invokeMethod(parent_widget, "show_download_error_message", QtCore.Qt.QueuedConnection, QtCore.Q_ARG(str, str(e)))
+        finally:
+            if msg_box_to_close:
+                QtCore.QMetaObject.invokeMethod(msg_box_to_close, "accept", QtCore.Qt.QueuedConnection)
+
+    if parent_widget:
+        msg_box = QtWidgets.QMessageBox(parent_widget)
+        msg_box.setIcon(QtWidgets.QMessageBox.Information)
+        msg_box.setText("mame.png をダウンロードしています...")
+        msg_box.setStandardButtons(QtWidgets.QMessageBox.NoButton) # ボタンを非表示
+        msg_box.setModal(False)
+        msg_box.show()
+        
+        # UIが固まらないように別スレッドでダウンロード
+        thread = threading.Thread(target=download_task, args=(msg_box,))
+        thread.daemon = True
+        thread.start()
+    else:
+        # GUIがない場合のフォールバック
+        download_task()
+
 class GameMonitorThread(threading.Thread):
     def __init__(self, process_name, overlay):
         super().__init__()
@@ -97,8 +140,6 @@ class Singleton(type):
             cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
         return cls._instances[cls]
 
-from distutils.version import LooseVersion
-
 def check_for_updates(current_version):
     """GitHubリリースページをチェックして新しいバージョンがないか確認する"""
     # TODO: ユーザーのGitHubリポジトリに合わせて変更する
@@ -115,7 +156,7 @@ def check_for_updates(current_version):
                 
                 
                 # バージョン比較
-                if LooseVersion(latest_version_str) > LooseVersion(current_version_str):
+                if Version(latest_version_str) > Version(current_version_str):
                     if not data.get('assets'):
                         print("リリースにアセットが見つかりません。")
                         return None
