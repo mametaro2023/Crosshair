@@ -109,10 +109,13 @@ def check_for_updates(current_version):
                 data = json.loads(response.read().decode())
                 tag_name = data['tag_name']
 
-                latest_version = tag_name
+                # 'ver' プレフィックスを削除して比較
+                latest_version_str = tag_name.lstrip('ver')
+                current_version_str = current_version.lstrip('ver')
+                
                 
                 # バージョン比較
-                if LooseVersion(latest_version) > LooseVersion(current_version):
+                if LooseVersion(latest_version_str) > LooseVersion(current_version_str):
                     if not data.get('assets'):
                         print("リリースにアセットが見つかりません。")
                         return None

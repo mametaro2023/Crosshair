@@ -322,7 +322,7 @@ class CrosshairOverlay(QtWidgets.QWidget):
 
 def check_updates_thread(overlay):
     """バックグラウンドでアップデートを確認するスレッド"""
-    time.sleep(5) 
+    time.sleep(2) 
     print("アップデートを確認しています...")
     update_info = utils.check_for_updates(config.APP_VERSION)
     if update_info:

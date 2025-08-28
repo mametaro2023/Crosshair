@@ -241,10 +241,6 @@ class ControlPanel(QtWidgets.QWidget):
         self.setWindowTitle("Crosshair Control Panel")
         self.setGeometry(100, 100, 450, 100)
         self._panel_animations = []
-        # 過剰な update() 呼び出しによるちらつきとゴースト対策用タイマー
-        self._update_timer = QtCore.QTimer(self)
-        self._update_timer.setSingleShot(True)
-        self._update_timer.timeout.connect(self._perform_deferred_update)
 
         self.setObjectName("controlPanel")
         self.setAttribute(QtCore.Qt.WA_StyledBackground, True)
@@ -809,9 +805,9 @@ class ControlPanel(QtWidgets.QWidget):
 
     # --- 更新スロットリング関連 ---
     def schedule_overlay_update(self):
-        # 50ms 後にまとめて更新 (連続スライダー操作などでの再描画蓄積防止)
-        self.overlay.is_dirty = True  # 既存フラグを保つ
-        self._update_timer.start(50)
+        # 更新を即座に実行
+        self.overlay.is_dirty = True
+        self._perform_deferred_update()
 
     def _perform_deferred_update(self):
         # 実際の update() と表示再構築
