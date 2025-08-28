@@ -6,7 +6,8 @@ import keyboard
 
 from . import utils
 from . import config
-from .dialogs import SettingsDialog, KeyCaptureDialog, UpdateDialog, show_update_dialog
+from .dialogs import SettingsDialog, KeyCaptureDialog
+from .ui_components import tab_general, tab_crosshair, tab_dot, tab_keys
 
 
 class ControlPanel(QtWidgets.QWidget):
@@ -32,22 +33,7 @@ class ControlPanel(QtWidgets.QWidget):
         main_layout.setSpacing(10)
 
         # --- Menu Bar ---
-        menu_bar = QtWidgets.QMenuBar()
-        settings_menu = menu_bar.addMenu("設定")
-        settings_menu.addAction("保存先フォルダ...", self.open_settings)
-        self.hotkey_action = settings_menu.addAction("ショートカットキー設定...")
-        self.hotkey_action.triggered.connect(self.open_hotkey_settings)
-        self.update_hotkey_menu_text()
-
-        settings_menu.addSeparator()
-        self.startup_action = settings_menu.addAction("PC起動時に自動実行する")
-        self.startup_action.setCheckable(True)
-        if utils.IS_WINDOWS:
-            self.startup_action.setChecked(utils.is_in_startup(utils.APP_NAME))
-            self.startup_action.triggered.connect(self.toggle_startup)
-        else:
-            self.startup_action.setEnabled(False)
-        main_layout.setMenuBar(menu_bar)
+        self._create_menu_bar(main_layout)
 
         # --- Master Toggle ---
         self.master_toggle_btn = QtWidgets.QPushButton("オーバーレイ無効化")
@@ -57,165 +43,10 @@ class ControlPanel(QtWidgets.QWidget):
         main_layout.addWidget(self.master_toggle_btn)
 
         # --- Presets Group ---
-        presets_group = QtWidgets.QGroupBox("プリセット")
-        presets_layout = QtWidgets.QHBoxLayout(presets_group)
-        self.preset_box = QtWidgets.QComboBox()
-        self.save_btn = QtWidgets.QPushButton("保存")
-        self.save_btn.setProperty("accent", True)
-        self.save_btn.clicked.connect(self.save_preset)
-        presets_layout.addWidget(self.preset_box, 1)
-        presets_layout.addWidget(self.save_btn)
-        main_layout.addWidget(presets_group)
+        self._create_presets_group(main_layout)
 
         # --- Tab Widget for Settings ---
-        tab_widget = QtWidgets.QTabWidget()
-        tab_widget.setObjectName("settingsTab")
-        main_layout.addWidget(tab_widget)
-
-        # --- General Settings Tab ---
-        general_tab = QtWidgets.QWidget()
-        general_layout = QtWidgets.QVBoxLayout(general_tab)
-        general_layout.setContentsMargins(10, 15, 10, 10)
-        general_layout.setSpacing(12)
-        
-        monitor_layout = QtWidgets.QHBoxLayout()
-        monitor_label = QtWidgets.QLabel("表示モニター:")
-        self.monitor_selection_box = QtWidgets.QComboBox()
-        self.monitor_selection_box.currentIndexChanged.connect(self.monitor_changed)
-        monitor_layout.addWidget(monitor_label)
-        monitor_layout.addWidget(self.monitor_selection_box, 1)
-        general_layout.addLayout(monitor_layout)
-
-        self.apex_monitor_action = QtWidgets.QCheckBox("Apex Legendsの起動を検出して自動ON/OFF")
-        if utils.psutil:
-            self.apex_monitor_action.setChecked(self.overlay.monitor_apex)
-            self.apex_monitor_action.toggled.connect(self.toggle_apex_monitoring)
-        else:
-            self.apex_monitor_action.setEnabled(False)
-            self.apex_monitor_action.setToolTip("この機能を利用するには 'psutil' ライブラリが必要です。(pip install psutil)")
-        general_layout.addWidget(self.apex_monitor_action)
-
-        self.fade_on_shoot_checkbox = QtWidgets.QCheckBox("射撃中はクロスヘアを薄くする")
-        self.fade_on_shoot_checkbox.toggled.connect(self.toggle_fade_on_shoot)
-        general_layout.addWidget(self.fade_on_shoot_checkbox)
-        general_layout.addStretch()
-        tab_widget.addTab(general_tab, "全般")
-
-        # --- Crosshair Tab ---
-        ch_tab = QtWidgets.QWidget()
-        ch_layout = QtWidgets.QVBoxLayout(ch_tab)
-        ch_layout.setContentsMargins(10, 15, 10, 10)
-        ch_layout.setSpacing(12)
-
-        self.crosshair_btn = QtWidgets.QCheckBox("クロスヘアを表示")
-        self.crosshair_btn.toggled.connect(self.toggle_crosshair_button)
-        ch_layout.addWidget(self.crosshair_btn)
-
-        shape_layout = QtWidgets.QHBoxLayout()
-        self.shape_box = QtWidgets.QComboBox()
-        self.shape_box.addItems(["十字", "十字 (ギャップなし)", "円", "矢印 (シェブロン)", "MAME", "カスタム画像"])
-        self.shape_box.currentTextChanged.connect(self.update_crosshair_shape)
-        shape_layout.addWidget(QtWidgets.QLabel("形状:"))
-        shape_layout.addWidget(self.shape_box, 1)
-        ch_layout.addLayout(shape_layout)
-
-        self.custom_image_widget = QtWidgets.QWidget()
-        custom_image_layout = QtWidgets.QHBoxLayout(self.custom_image_widget)
-        custom_image_layout.setContentsMargins(0, 5, 0, 0)
-        select_image_btn = QtWidgets.QPushButton("画像を選択...")
-        select_image_btn.clicked.connect(self.select_custom_image)
-        self.custom_image_path_label = QtWidgets.QLabel("選択されていません")
-        self.custom_image_path_label.setWordWrap(True)
-        custom_image_layout.addWidget(select_image_btn)
-        custom_image_layout.addWidget(self.custom_image_path_label, 1)
-        ch_layout.addWidget(self.custom_image_widget)
-
-        # 色設定UIをコンテナウィジェットに格納
-        self.ch_color_widget = QtWidgets.QWidget()
-        ch_color_layout, self.ch_color_square = self.make_color_button("色:", lambda: self.overlay.crosshair_color, self.set_crosshair_color, lambda: self.overlay.update())
-        ch_color_layout.setContentsMargins(0, 0, 0, 0)
-        self.ch_color_widget.setLayout(ch_color_layout)
-        ch_layout.addWidget(self.ch_color_widget)
-
-        alpha_layout = QtWidgets.QHBoxLayout()
-        self.alpha_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        self.alpha_slider.setRange(0, 100)
-        self.alpha_value_edit = QtWidgets.QLineEdit()
-        self.alpha_value_edit.setFixedWidth(45)
-        self.alpha_slider.valueChanged.connect(self.update_alpha)
-        alpha_layout.addWidget(QtWidgets.QLabel("透明度:"))
-        alpha_layout.addWidget(self.alpha_slider)
-        alpha_layout.addWidget(self.alpha_value_edit)
-        ch_layout.addLayout(alpha_layout)
-        ch_layout.addStretch()
-        tab_widget.addTab(ch_tab, "クロスヘア")
-
-        # --- Dot Tab ---
-        dot_tab = QtWidgets.QWidget()
-        dot_layout = QtWidgets.QVBoxLayout(dot_tab)
-        dot_layout.setContentsMargins(10, 15, 10, 10)
-        dot_layout.setSpacing(12)
-
-        self.dot_btn = QtWidgets.QCheckBox("ドットを表示")
-        self.dot_btn.toggled.connect(self.toggle_dot_button)
-        dot_layout.addWidget(self.dot_btn)
-
-        dotsize_layout = QtWidgets.QHBoxLayout()
-        self.dot_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        self.dot_slider.setRange(0, 100)
-        self.dot_value_edit = QtWidgets.QLineEdit()
-        self.dot_value_edit.setFixedWidth(45)
-        self.dot_slider.valueChanged.connect(self.update_dot_size)
-        dotsize_layout.addWidget(QtWidgets.QLabel("サイズ:"))
-        dotsize_layout.addWidget(self.dot_slider)
-        dotsize_layout.addWidget(self.dot_value_edit)
-        dot_layout.addLayout(dotsize_layout)
-
-        dot_out_color_layout, self.dot_out_color_square = self.make_color_button("外枠の色:", lambda: self.overlay.dot_outer_color, self.set_dot_outer_color, lambda: self.overlay.update())
-        dot_in_color_layout, self.dot_in_color_square = self.make_color_button("内側の色:", lambda: self.overlay.dot_inner_color, self.set_dot_inner_color, lambda: self.overlay.update())
-        dot_layout.addLayout(dot_out_color_layout)
-        dot_layout.addLayout(dot_in_color_layout)
-
-        dot_alpha_layout = QtWidgets.QHBoxLayout()
-        self.dot_alpha_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        self.dot_alpha_slider.setRange(0, 100)
-        self.dot_alpha_value_edit = QtWidgets.QLineEdit()
-        self.dot_alpha_value_edit.setFixedWidth(45)
-        self.dot_alpha_slider.valueChanged.connect(self.update_dot_alpha)
-        dot_alpha_layout.addWidget(QtWidgets.QLabel("透明度:"))
-        dot_alpha_layout.addWidget(self.dot_alpha_slider)
-        dot_alpha_layout.addWidget(self.dot_alpha_value_edit)
-        dot_layout.addLayout(dot_alpha_layout)
-        dot_layout.addStretch()
-        tab_widget.addTab(dot_tab, "ドット")
-
-        # --- Keys Tab ---
-        keys_tab = QtWidgets.QWidget()
-        keys_layout = QtWidgets.QVBoxLayout(keys_tab)
-        keys_layout.setContentsMargins(10, 15, 10, 10)
-        keys_layout.setSpacing(12)
-        
-        disabled_keys_group = QtWidgets.QGroupBox("現在無効化中のキー")
-        disabled_keys_layout = QtWidgets.QVBoxLayout(disabled_keys_group)
-        self.disabled_keys_label = QtWidgets.QLabel("なし")
-        self.disabled_keys_label.setWordWrap(True)
-        disabled_keys_layout.addWidget(self.disabled_keys_label)
-        keys_layout.addWidget(disabled_keys_group)
-
-        keys_btn_layout = QtWidgets.QHBoxLayout()
-        disable_btn = QtWidgets.QPushButton("無効化キーを追加")
-        disable_btn.clicked.connect(self.disable_key_gui)
-        enable_btn = QtWidgets.QPushButton("無効化キーを削除")
-        enable_btn.clicked.connect(self.enable_key_gui)
-        keys_btn_layout.addWidget(disable_btn)
-        keys_btn_layout.addWidget(enable_btn)
-        keys_layout.addLayout(keys_btn_layout)
-        
-        enable_all_btn = QtWidgets.QPushButton("すべてのキーを有効化")
-        enable_all_btn.clicked.connect(self.enable_all_keys_gui)
-        keys_layout.addWidget(enable_all_btn)
-        keys_layout.addStretch()
-        tab_widget.addTab(keys_tab, "キー無効化")
+        self._create_tab_widget(main_layout)
 
         # --- Finalize ---
         self.update_control_panel_ui()
@@ -236,21 +67,64 @@ class ControlPanel(QtWidgets.QWidget):
         self.animate_panel_show()
         self._pulse_once(self.save_btn, QtGui.QColor("#0078d7"))
 
+    def _create_menu_bar(self, parent_layout):
+        menu_bar = QtWidgets.QMenuBar()
+        settings_menu = menu_bar.addMenu("設定")
+        settings_menu.addAction("保存先フォルダ...", self.open_settings)
+        self.hotkey_action = settings_menu.addAction("ショートカットキー設定...")
+        self.hotkey_action.triggered.connect(self.open_hotkey_settings)
+        self.update_hotkey_menu_text()
+
+        settings_menu.addSeparator()
+        self.startup_action = settings_menu.addAction("PC起動時に自動実行する")
+        self.startup_action.setCheckable(True)
+        if utils.IS_WINDOWS:
+            self.startup_action.setChecked(utils.is_in_startup(utils.APP_NAME))
+            self.startup_action.triggered.connect(self.toggle_startup)
+        else:
+            self.startup_action.setEnabled(False)
+        parent_layout.setMenuBar(menu_bar)
+
+    def _create_presets_group(self, parent_layout):
+        presets_group = QtWidgets.QGroupBox("プリセット")
+        presets_layout = QtWidgets.QHBoxLayout(presets_group)
+        self.preset_box = QtWidgets.QComboBox()
+        self.save_btn = QtWidgets.QPushButton("保存")
+        self.save_btn.setProperty("accent", True)
+        self.save_btn.clicked.connect(self.save_preset)
+        presets_layout.addWidget(self.preset_box, 1)
+        presets_layout.addWidget(self.save_btn)
+        parent_layout.addWidget(presets_group)
+
+    def _create_tab_widget(self, parent_layout):
+        tab_widget = QtWidgets.QTabWidget()
+        tab_widget.setObjectName("settingsTab")
+        
+        general_tab = tab_general.create_tab(self)
+        ch_tab = tab_crosshair.create_tab(self)
+        dot_tab = tab_dot.create_tab(self)
+        keys_tab = tab_keys.create_tab(self)
+
+        tab_widget.addTab(general_tab, "全般")
+        tab_widget.addTab(ch_tab, "クロスヘア")
+        tab_widget.addTab(dot_tab, "ドット")
+        tab_widget.addTab(keys_tab, "キー無効化")
+
+        parent_layout.addWidget(tab_widget)
+
+    # --- Event Handlers & Slots ---
+
     def _on_alpha_input_finished(self):
         original_value = self.overlay.crosshair_alpha
         text = self.alpha_value_edit.text()
-        # 全角を半角に変換
         text = text.translate(str.maketrans("０１２３４５６７８９．", "0123456789."))
         try:
             value = float(text)
-            # 小数点以下第3位を切り捨て
             value = int(value * 100) / 100.0
-            # 上限・下限チェック
             if value > 1.0: value = 1.0
             if value < 0.0: value = 0.0
             self.alpha_slider.setValue(int(value * 100))
         except ValueError:
-            # 数字以外の文字が入力された場合は元の値に戻す
             self.alpha_value_edit.setText(f"{original_value:.2f}")
 
     def _on_dot_size_input_finished(self):
@@ -279,26 +153,17 @@ class ControlPanel(QtWidgets.QWidget):
             self.dot_alpha_value_edit.setText(f"{original_value:.2f}")
 
     def open_hotkey_settings(self):
-        # ダイアログを開く前に、既存のホットキーを一時的に無効化
         self.overlay.unregister_toggle_hotkey()
-
         def on_key_selected(key):
-            # 新しいキーが選択されたら、それを設定する（内部で新しいホットキーが登録される）
             self.overlay.set_toggle_hotkey(key)
             self.overlay.save_global_config()
             self.update_hotkey_menu_text()
-            self.update_master_toggle_button_ui() # ボタンのテキストを更新
+            self.update_master_toggle_button_ui()
             QtWidgets.QMessageBox.information(self, "設定完了", f"表示切替ショートカットキーを '{key}' に設定しました。")
-
         dlg = KeyCaptureDialog(self,
                                message=f"新しいショートカットキーを押してください\n(現在の設定: {self.overlay.toggle_hotkey})",
                                key_callback=on_key_selected)
-        
-        # ダイアログの実行結果を取得
         result = dlg.exec_()
-
-        # もしダイアログがキャンセルされた場合（新しいキーが設定されなかった場合）、
-        # 元のホットキーを再度有効化する
         if result == QtWidgets.QDialog.Rejected:
             self.overlay.register_toggle_hotkey()
 
@@ -309,13 +174,11 @@ class ControlPanel(QtWidgets.QWidget):
     def make_color_button(self, label_text, getter, setter, update_callback):
         layout_ = QtWidgets.QHBoxLayout()
         label = QtWidgets.QLabel(label_text)
-        
         color_button = QtWidgets.QPushButton()
         color_button.setFixedSize(90, 28)
         color_button.setToolTip("クリックして色を選択")
-        
         def update_color(color_hex):
-            color_button.setStyleSheet(f"""
+            color_button.setStyleSheet(f'''
                 QPushButton {{
                     background-color: {color_hex};
                     border: 1px solid #4d4d4d;
@@ -324,18 +187,14 @@ class ControlPanel(QtWidgets.QWidget):
                 QPushButton:hover {{
                     border-color: #007acc;
                 }}
-            """)
+            ''')
             color_button.setText(color_hex.upper())
             qcolor = QtGui.QColor(color_hex)
-            # 輝度に基づいてテキスト色を決定
             if qcolor.lightness() > 127:
                 color_button.setStyleSheet(color_button.styleSheet() + "QPushButton { color: #000000; font-weight: bold; }")
             else:
                 color_button.setStyleSheet(color_button.styleSheet() + "QPushButton { color: #ffffff; font-weight: bold; }")
-        
-        # color_buttonオブジェクトに更新関数をアタッチ
         color_button.update_color = update_color
-
         def pick_color():
             current_color = QtGui.QColor(getter())
             color = QtWidgets.QColorDialog.getColor(current_color, self, "色を選択")
@@ -345,14 +204,11 @@ class ControlPanel(QtWidgets.QWidget):
                 color_button.update_color(color_name)
                 update_callback()
                 self.schedule_overlay_update()
-
         color_button.clicked.connect(pick_color)
         color_button.update_color(getter()) # 初期色を設定
-
         layout_.addWidget(label)
         layout_.addStretch()
         layout_.addWidget(color_button)
-        
         return layout_, color_button
 
     def closeEvent(self, event):
@@ -375,11 +231,9 @@ class ControlPanel(QtWidgets.QWidget):
     def load_presets(self):
         self.preset_box.blockSignals(True)
         self.preset_box.clear() 
-        
         self.preset_box.addItem(self.overlay.UNSAVED_PRESET_TEXT)
         self.preset_box.addItem("デフォルト設定")
         self.overlay.presets = {"デフォルト設定": self.overlay.default_config}
-
         for file in os.listdir(self.overlay.preset_folder):
             if file.endswith(config.PRESET_EXTENSION):
                 name = os.path.splitext(file)[0]
@@ -391,7 +245,6 @@ class ControlPanel(QtWidgets.QWidget):
                     self.preset_box.addItem(name)
                 except Exception as e:
                     print(f"プリセット読み込み失敗: {file}: {e}")
-
         if self.overlay.is_dirty:
             self.preset_box.setCurrentIndex(0)
         elif self.overlay.last_selected_preset in self.overlay.presets:
@@ -399,7 +252,6 @@ class ControlPanel(QtWidgets.QWidget):
             self.preset_box.setCurrentIndex(index)
         else:
             self.preset_box.setCurrentIndex(0)
-
         self.preset_box.blockSignals(False)
 
     def save_preset(self):
@@ -412,7 +264,6 @@ class ControlPanel(QtWidgets.QWidget):
             try:
                 with open(path, "w", encoding="utf-8") as f:
                     json.dump(self.overlay.get_config(), f, indent=4)
-                
                 self.overlay.last_selected_preset = os.path.splitext(os.path.basename(path))[0]
                 self.overlay.save_global_config()
                 self.load_presets()
@@ -426,14 +277,11 @@ class ControlPanel(QtWidgets.QWidget):
         name = self.preset_box.currentText()
         if name == self.overlay.UNSAVED_PRESET_TEXT:
             return
-        
         config_to_load = self.overlay.presets.get(name, self.overlay.default_config)
         self.overlay.apply_config(config_to_load)
-        
         self.overlay.last_selected_preset = name
         self.overlay.save_global_config()
         print(f"プリセット {name} を読み込みました")
-        
         self.update_control_panel_ui()
         self.overlay.update()
         self.overlay.is_dirty = False
@@ -451,7 +299,6 @@ class ControlPanel(QtWidgets.QWidget):
     def set_master_enabled(self, enabled, manual_toggle=False):
         if self.overlay.master_enabled == enabled and not manual_toggle:
             return
-
         self.overlay.master_enabled = enabled
         self.update_master_toggle_button_ui()
         self.overlay.update()
@@ -459,7 +306,6 @@ class ControlPanel(QtWidgets.QWidget):
     def update_master_toggle_button_ui(self):
         if not hasattr(self, 'master_toggle_btn'):
             return
-
         hotkey_text = f"({self.overlay.toggle_hotkey})"
         if self.overlay.master_enabled:
             self.master_toggle_btn.setText(f"オーバーレイ無効化 {hotkey_text}")
@@ -467,17 +313,12 @@ class ControlPanel(QtWidgets.QWidget):
         else:
             self.master_toggle_btn.setText(f"オーバーレイ有効化 {hotkey_text}")
             self.master_toggle_btn.setObjectName("masterToggleButtonActive")
-
         if self.overlay.monitor_apex:
             self.master_toggle_btn.setToolTip("Apex監視が有効です。ゲームの起動/終了時に自動でON/OFFが切り替わります。")
         else:
             self.master_toggle_btn.setToolTip("クロスヘアとドットの表示をまとめてON/OFFします")
-
         self.master_toggle_btn.style().unpolish(self.master_toggle_btn)
         self.master_toggle_btn.style().polish(self.master_toggle_btn)
-
-    def toggle_master_visibility(self):
-        self.set_master_enabled(not self.overlay.master_enabled, manual_toggle=True)
 
     def toggle_master_visibility(self):
         self.overlay.toggle_master_visibility()
@@ -507,18 +348,14 @@ class ControlPanel(QtWidgets.QWidget):
         self.overlay.monitor_apex = checked
         self.overlay.save_global_config()
         self.master_toggle_btn.setEnabled(True)
-
         if checked:
             if not utils.psutil:
-                QtWidgets.QMessageBox.warning(self, "ライブラリ不足", "この機能を利用するには 'psutil' が必要です。コマンドプロンプトで 'pip install psutil' を実行してください。")
+                QtWidgets.QMessageBox.warning(self, "ライブラリ不足", "この機能を利用するには 'psutil' が必要です。コマンドプロンプトで 'pip install psutil' を実行してください。 সন")
                 if hasattr(self, 'apex_monitor_action'):
                     self.apex_monitor_action.setChecked(False)
                 return
-
-            # 現在のゲームの状態を確認して即座に反映
             is_game_running = any(p.name() in utils.GAME_PROCESS_NAMES for p in utils.psutil.process_iter(['name']))
             self.set_master_enabled(is_game_running)
-
             if self.overlay.game_monitor_thread is None:
                 self.overlay.game_monitor_thread = utils.GameMonitorThread(utils.GAME_PROCESS_NAMES, self.overlay)
                 self.overlay.game_monitor_thread.start()
@@ -527,12 +364,11 @@ class ControlPanel(QtWidgets.QWidget):
             if self.overlay.game_monitor_thread is not None:
                 self.overlay.game_monitor_thread.stop()
                 print("Apex Legendsの監視を停止しています...")
-        
         self.update_master_toggle_button_ui()
 
     @QtCore.pyqtSlot()
     def on_monitor_thread_finished(self):
-        print("Apex Legendsの監視を停止しました。")
+        print("Apex Legendsの監視を停止しました。 সন")
         self.overlay.game_monitor_thread = None
 
     def animate_panel_show(self) -> None:
@@ -541,7 +377,6 @@ class ControlPanel(QtWidgets.QWidget):
         fade.setStartValue(0.0)
         fade.setEndValue(1.0)
         fade.setEasingCurve(QtCore.QEasingCurve.InOutQuad)
-
         end_geo = self.geometry()
         start_geo = QtCore.QRect(end_geo.x(), end_geo.y() - 20, end_geo.width(), end_geo.height())
         slide = QtCore.QPropertyAnimation(self, b"geometry")
@@ -549,7 +384,6 @@ class ControlPanel(QtWidgets.QWidget):
         slide.setStartValue(start_geo)
         slide.setEndValue(end_geo)
         slide.setEasingCurve(QtCore.QEasingCurve.OutCubic)
-
         group = QtCore.QParallelAnimationGroup(self)
         group.addAnimation(fade)
         group.addAnimation(slide)
@@ -562,19 +396,16 @@ class ControlPanel(QtWidgets.QWidget):
         effect.setOffset(0, 0)
         effect.setBlurRadius(0)
         widget.setGraphicsEffect(effect)
-
         up = QtCore.QPropertyAnimation(effect, b"blurRadius")
         up.setDuration(500)
         up.setStartValue(0)
         up.setEndValue(24)
         up.setEasingCurve(QtCore.QEasingCurve.OutCubic)
-
         down = QtCore.QPropertyAnimation(effect, b"blurRadius")
         down.setDuration(500)
         down.setStartValue(24)
         down.setEndValue(0)
         down.setEasingCurve(QtCore.QEasingCurve.InCubic)
-
         seq = QtCore.QSequentialAnimationGroup(widget)
         seq.addAnimation(up)
         seq.addAnimation(down)
@@ -591,17 +422,13 @@ class ControlPanel(QtWidgets.QWidget):
         self.fade_on_shoot_checkbox.blockSignals(True)
         self.crosshair_btn.blockSignals(True)
         self.dot_btn.blockSignals(True)
-
         self.monitor_selection_box.setCurrentIndex(self.overlay.selected_monitor_index)
         self.crosshair_btn.setChecked(self.overlay.crosshair_visible)
         self.dot_btn.setChecked(self.overlay.dot_visible)
-        
         shape = self.overlay.crosshair_shape
         self.shape_box.setCurrentText(shape)
-        
         is_image_based = shape in ["MAME", "カスタム画像"]
         self.ch_color_widget.setVisible(not is_image_based)
-
         is_custom_image = self.overlay.crosshair_shape == "カスタム画像"
         self.custom_image_widget.setVisible(is_custom_image)
         if is_custom_image:
@@ -610,7 +437,6 @@ class ControlPanel(QtWidgets.QWidget):
                 self.custom_image_path_label.setText(os.path.basename(path))
             else:
                 self.custom_image_path_label.setText("選択されていません")
-
         self.dot_slider.setValue(self.overlay.dot_radius * 2)
         self.dot_value_edit.setText(str(self.overlay.dot_radius * 2))
         self.ch_color_square.update_color(self.overlay.crosshair_color)
@@ -622,7 +448,6 @@ class ControlPanel(QtWidgets.QWidget):
         self.dot_alpha_value_edit.setText(f"{self.overlay.dot_alpha:.2f}")
         self.fade_on_shoot_checkbox.setChecked(self.overlay.fade_on_shoot_enabled)
         self.disabled_keys_label.setText(", ".join(self.overlay.disabled_keys) if self.overlay.disabled_keys else "なし")
-
         self.monitor_selection_box.blockSignals(False)
         self.shape_box.blockSignals(False)
         self.dot_slider.blockSignals(False)
@@ -642,12 +467,8 @@ class ControlPanel(QtWidgets.QWidget):
             msg_box.setWindowTitle("再起動が必要です")
             restart_button = msg_box.addButton("今すぐ再起動", QtWidgets.QMessageBox.AcceptRole)
             msg_box.addButton("後で", QtWidgets.QMessageBox.RejectRole)
-            
-            # テキスト部分のラベル(qt_msgbox_label)にのみスタイルを適用
             msg_box.setStyleSheet("QLabel#qt_msgbox_label { min-width: 310px; }")
-
             msg_box.exec_()
-
             if msg_box.clickedButton() == restart_button:
                 self.overlay.restart_application()
 
@@ -666,14 +487,11 @@ class ControlPanel(QtWidgets.QWidget):
 
     def update_crosshair_shape(self, shape_text):
         self.overlay.crosshair_shape = shape_text
-        
         is_image_based = shape_text in ["MAME", "カスタム画像"]
         self.ch_color_widget.setVisible(not is_image_based)
         self.custom_image_widget.setVisible(shape_text == "カスタム画像")
-        
         if shape_text == "MAME":
             utils.download_mame_png_if_missing(self)
-
         self.schedule_overlay_update()
 
     def select_custom_image(self):
@@ -729,15 +547,12 @@ class ControlPanel(QtWidgets.QWidget):
         if not self.overlay.disabled_keys:
             QtWidgets.QMessageBox.information(self, "情報", "無効化されているキーはありません。")
             return
-        
         def on_key_selected(key):
             self.overlay.enable_key(key)
             self.disabled_keys_label.setText(", ".join(self.overlay.disabled_keys) if self.overlay.disabled_keys else "なし")
-            # 他の無効化キーを再ブロック後まとめて更新
             for k in self.overlay.disabled_keys:
                 if k != key: keyboard.block_key(k)
             self.schedule_overlay_update()
-        
         for k in self.overlay.disabled_keys:
              try: keyboard.unblock_key(k)
              except: pass
@@ -749,14 +564,11 @@ class ControlPanel(QtWidgets.QWidget):
         self.disabled_keys_label.setText("なし")
         self.schedule_overlay_update()
 
-    # --- 更新スロットリング関連 ---
     def schedule_overlay_update(self):
-        # 更新を即座に実行
         self.overlay.is_dirty = True
         self._perform_deferred_update()
 
     def _perform_deferred_update(self):
-        # 実際の update() と表示再構築
         self.overlay.update()
         if hasattr(self.overlay, '_set_dirty_and_update_display'):
             try:
@@ -764,9 +576,7 @@ class ControlPanel(QtWidgets.QWidget):
             except Exception:
                 pass
 
-    # 背景を毎回明示的に塗りつぶして残像を防止
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
         painter.fillRect(self.rect(), QtGui.QColor(30, 30, 30))
         super().paintEvent(event)
-
