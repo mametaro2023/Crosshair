@@ -6,233 +6,8 @@ import keyboard
 
 from . import utils
 from . import config
+from .dialogs import SettingsDialog, KeyCaptureDialog, UpdateDialog, show_update_dialog
 
-
-def apply_dark_theme(app: QtWidgets.QApplication) -> None:
-    app.setStyle("Fusion")
-
-    palette = QtGui.QPalette()
-    palette.setColor(QtGui.QPalette.Window, QtGui.QColor(37, 41, 45))
-    palette.setColor(QtGui.QPalette.WindowText, QtGui.QColor(224, 224, 224))
-    palette.setColor(QtGui.QPalette.Base, QtGui.QColor(28, 31, 34))
-    palette.setColor(QtGui.QPalette.AlternateBase, QtGui.QColor(44, 47, 51))
-    palette.setColor(QtGui.QPalette.ToolTipBase, QtGui.QColor(45, 47, 54))
-    palette.setColor(QtGui.QPalette.ToolTipText, QtGui.QColor(224, 224, 224))
-    palette.setColor(QtGui.QPalette.Text, QtGui.QColor(224, 224, 224))
-    palette.setColor(QtGui.QPalette.Button, QtGui.QColor(45, 47, 54))
-    palette.setColor(QtGui.QPalette.ButtonText, QtGui.QColor(224, 224, 224))
-    palette.setColor(QtGui.QPalette.BrightText, QtGui.QColor(255, 0, 0))
-    palette.setColor(QtGui.QPalette.Highlight, QtGui.QColor(0, 120, 215))
-    palette.setColor(QtGui.QPalette.HighlightedText, QtGui.QColor(255, 255, 255))
-    palette.setColor(QtGui.QPalette.Link, QtGui.QColor(0, 170, 255))
-    app.setPalette(palette)
-
-    app.setStyleSheet(
-        """
-        QWidget {
-            color: #e0e0e0;
-            font-family: 'Noto Sans JP', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-            font-size: 10pt;
-        }
-        QDialog, QMenuBar, QMenu {
-            background-color: #25292d;
-        }
-        QMenuBar {
-            border-bottom: 1px solid #3c4048;
-        }
-        QMenu::item:selected {
-            background-color: #0078d7;
-        }
-
-        /* QGroupBox: 透過背景が頻繁な再描画時にゴースト(重なり)を生むので不透明色に変更 */
-        QGroupBox {
-            background-color: #2c3135; /* 以前: rgba(44, 49, 53, 0.7) */
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            margin-top: 10px;
-            padding: 10px 5px 5px 5px;
-        }
-        QGroupBox::title {
-            subcontrol-origin: margin;
-            subcontrol-position: top left;
-            padding: 0 10px;
-            left: 10px;
-            color: #00aaff;
-            font-weight: bold;
-        }
-
-        QPushButton {
-            background-color: #40454c;
-            border: 1px solid #50555c;
-            padding: 8px 12px;
-            border-radius: 4px;
-            color: #e0e0e0;
-        }
-        QPushButton:hover {
-            background-color: #4a4f57;
-            border-color: #5a5f67;
-        }
-        QPushButton:pressed {
-            background-color: #2a2e36;
-        }
-        QPushButton[accent="true"] {
-            background-color: #0078d7;
-            border: 1px solid #0088f7;
-            color: #ffffff;
-            font-weight: bold;
-        }
-        QPushButton[accent="true"]:hover { background-color: #0088f7; }
-        QPushButton[accent="true"]:pressed { background-color: #0068c7; }
-
-        QPushButton#masterToggleButton {
-            background-color: #c0392b;
-            border: 1px solid #e74c3c;
-            font-weight: bold;
-            padding: 10px 12px;
-        }
-        QPushButton#masterToggleButton:hover { background-color: #e74c3c; }
-
-        QPushButton#masterToggleButtonActive {
-            background-color: #27ae60;
-            border: 1px solid #2ecc71;
-            font-weight: bold;
-            padding: 10px 12px;
-        }
-        QPushButton#masterToggleButtonActive:hover { background-color: #2ecc71; }
-
-        QComboBox, QLineEdit {
-            background-color: #40454c;
-            border: 1px solid #50555c;
-            border-radius: 4px;
-            padding: 6px 10px;
-        }
-        QComboBox QAbstractItemView {
-            background-color: #2c3136;
-            border: 1px solid #3c4048;
-            selection-background-color: #0078d7;
-        }
-
-        QSlider::groove:horizontal {
-            height: 4px;
-            background: #2c3136;
-            border-radius: 2px;
-        }
-        QSlider::handle:horizontal {
-            background: #00aaff;
-            width: 16px;
-            height: 16px;
-            margin: -6px 0;
-            border-radius: 8px;
-        }
-
-        QCheckBox {
-            spacing: 8px;
-        }
-        QCheckBox::indicator {
-            width: 16px; height: 16px;
-        }
-        QCheckBox::indicator:unchecked {
-            border: 1px solid #3c4048; background: #2c3136; border-radius: 4px;
-        }
-        QCheckBox::indicator:checked {
-            background-color: #0078d7; border: 1px solid #0088f7; border-radius: 4px;
-        }
-        """
-    )
-
-class SettingsDialog(QtWidgets.QDialog):
-    def __init__(self, parent=None, preset_folder_path=""):
-        super().__init__(parent)
-        self.setWindowTitle("環境設定")
-        self.setLayout(QtWidgets.QVBoxLayout())
-
-        path_layout = QtWidgets.QHBoxLayout()
-        self.path_label = QtWidgets.QLabel(preset_folder_path)
-        self.browse_btn = QtWidgets.QPushButton("参照")
-        self.browse_btn.clicked.connect(self.browse_folder)
-        path_layout.addWidget(self.path_label)
-        path_layout.addWidget(self.browse_btn)
-
-        self.layout().addLayout(path_layout)
-
-        close_btn = QtWidgets.QPushButton("閉じる")
-        close_btn.clicked.connect(self.accept)
-        self.layout().addWidget(close_btn)
-
-    def browse_folder(self):
-        folder = QtWidgets.QFileDialog.getExistingDirectory(self, "フォルダを選択", self.path_label.text())
-        if folder:
-            self.path_label.setText(folder)
-
-    def get_selected_path(self):
-        return self.path_label.text()
-
-class KeyCaptureDialog(QtWidgets.QDialog):
-    def __init__(self, parent=None, message="キーを押してください", key_callback=None):
-        super().__init__(parent)
-        self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowContextHelpButtonHint)
-        self.setWindowTitle("キー入力待機")
-        self.setWindowModality(QtCore.Qt.ApplicationModal)
-        self.setLayout(QtWidgets.QVBoxLayout())
-        
-        self.label = QtWidgets.QLabel(message)
-        self.layout().addWidget(self.label)
-        
-        self.key_callback = key_callback
-        self.captured_key = None
-        self.hook = None
-
-        cancel_button = QtWidgets.QPushButton("キャンセル")
-        cancel_button.clicked.connect(self.reject)
-        self.layout().addWidget(cancel_button)
-        self.resize(300, 100)
-
-    def _on_key_press(self, event):
-        key = event.name
-        
-        if key == "enter":
-            QtCore.QMetaObject.invokeMethod(self, "_show_enter_error", QtCore.Qt.QueuedConnection)
-            return
-
-        self.captured_key = key
-        QtCore.QMetaObject.invokeMethod(self, "accept", QtCore.Qt.QueuedConnection)
-        return True
-
-    @QtCore.pyqtSlot()
-    def _show_enter_error(self):
-        QtWidgets.QMessageBox.information(self, "無効化不可", "Enterキーは無効化できません。 সন")
-
-    def exec_(self):
-        self.hook = keyboard.on_press(self._on_key_press, suppress=True)
-        result = super().exec_()
-        keyboard.unhook(self.hook)
-        if result == QtWidgets.QDialog.Accepted and self.key_callback and self.captured_key:
-            self.key_callback(self.captured_key)
-        return result
-
-class ProgressDialog(QtWidgets.QDialog):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("アップデート中...")
-        self.setFixedSize(300, 100)
-        self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowContextHelpButtonHint)
-        self.setWindowModality(QtCore.Qt.ApplicationModal)
-
-        layout = QtWidgets.QVBoxLayout(self)
-
-        self.label = QtWidgets.QLabel("ダウンロード中...")
-        layout.addWidget(self.label)
-
-        self.progress_bar = QtWidgets.QProgressBar(self)
-        self.progress_bar.setRange(0, 100)
-        layout.addWidget(self.progress_bar)
-
-    @QtCore.pyqtSlot(int)
-    def update_progress(self, value):
-        self.progress_bar.setValue(value)
-        self.label.setText(f"ダウンロード中... {value}%")
-        if value == 100:
-            self.label.setText("ダウンロード完了。アップデートを準備中...")
 
 class ControlPanel(QtWidgets.QWidget):
     def __init__(self, overlay):
@@ -420,10 +195,6 @@ class ControlPanel(QtWidgets.QWidget):
             _gb.setAutoFillBackground(True)
 
         # --- Finalize ---
-        if self.apex_monitor_action.isChecked():
-            self.master_toggle_btn.setEnabled(False)
-            self.master_toggle_btn.setToolTip("Apex監視が有効なため、手動でのON/OFFはできません。")
-
         self.update_control_panel_ui()
         self.load_presets()
         self.preset_box.currentIndexChanged.connect(self.load_selected_preset)
@@ -553,7 +324,8 @@ class ControlPanel(QtWidgets.QWidget):
 
         self.overlay.master_enabled = enabled
 
-        if hasattr(self, 'master_toggle_btn'):
+        # Apex監視が有効な場合は、ボタンの見た目を変更しない
+        if hasattr(self, 'master_toggle_btn') and not self.overlay.monitor_apex:
             if self.overlay.master_enabled:
                 self.master_toggle_btn.setText("オーバーレイ無効化")
                 self.master_toggle_btn.setObjectName("masterToggleButton")
@@ -596,22 +368,40 @@ class ControlPanel(QtWidgets.QWidget):
 
         self.master_toggle_btn.setEnabled(not checked)
         if checked:
+            self.master_toggle_btn.setText("オーバーレイ自動制御中")
+            self.master_toggle_btn.setObjectName("masterToggleButtonMonitoring")
             self.master_toggle_btn.setToolTip("Apex監視が有効なため、手動でのON/OFFはできません。")
+            
             if not utils.psutil:
                 QtWidgets.QMessageBox.warning(self, "ライブラリ不足", "この機能を利用するには 'psutil' が必要です。コマンドプロンプトで 'pip install psutil' を実行してください。")
                 if hasattr(self, 'apex_monitor_action'):
                     self.apex_monitor_action.setChecked(False)
                 return
 
+            # 現在のゲームの状態を確認して即座に反映
+            is_game_running = any(p.name() in utils.GAME_PROCESS_NAMES for p in utils.psutil.process_iter(['name']))
+            self.set_master_enabled(is_game_running, manual_toggle=False)
+
             if self.overlay.game_monitor_thread is None:
-                self.overlay.game_monitor_thread = utils.GameMonitorThread(utils.GAME_PROCESS_NAME, self.overlay)
+                self.overlay.game_monitor_thread = utils.GameMonitorThread(utils.GAME_PROCESS_NAMES, self.overlay)
                 self.overlay.game_monitor_thread.start()
                 print("Apex Legendsの監視を開始しました。")
         else:
+            # ボタンの表示を現在のオーバーレイ状態に基づいて元に戻す
+            if self.overlay.master_enabled:
+                self.master_toggle_btn.setText("オーバーレイ無効化")
+                self.master_toggle_btn.setObjectName("masterToggleButton")
+            else:
+                self.master_toggle_btn.setText("オーバーレイ有効化")
+                self.master_toggle_btn.setObjectName("masterToggleButtonActive")
+
             self.master_toggle_btn.setToolTip("クロスヘアとドットの表示をまとめてON/OFFします")
             if self.overlay.game_monitor_thread is not None:
                 self.overlay.game_monitor_thread.stop()
                 print("Apex Legendsの監視を停止しています...")
+        
+        self.master_toggle_btn.style().unpolish(self.master_toggle_btn)
+        self.master_toggle_btn.style().polish(self.master_toggle_btn)
 
     @QtCore.pyqtSlot()
     def on_monitor_thread_finished(self):
@@ -824,36 +614,3 @@ class ControlPanel(QtWidgets.QWidget):
         painter.fillRect(self.rect(), QtGui.QColor(37, 41, 45))  # Window と同色でクリア
         super().paintEvent(event)
 
-class UpdateDialog(QtWidgets.QDialog):
-    def __init__(self, parent, update_info):
-        super().__init__(parent)
-        self.setWindowTitle("新しいバージョンが利用可能です")
-        self.setMinimumWidth(400)
-
-        layout = QtWidgets.QVBoxLayout(self)
-
-        title_label = QtWidgets.QLabel(f" {update_info['latest_version']} が利用可能です。")
-        title_label.setStyleSheet("font-weight: bold; font-size: 12pt;")
-        layout.addWidget(title_label)
-
-        layout.addWidget(QtWidgets.QLabel("リリースノート:"))
-        
-        notes_text = QtWidgets.QTextEdit()
-        notes_text.setHtml(update_info['release_notes'].replace('\n', '<br>'))
-        notes_text.setReadOnly(True)
-        layout.addWidget(notes_text)
-
-        button_box = QtWidgets.QDialogButtonBox()
-        update_button = button_box.addButton("今すぐアップデート", QtWidgets.QDialogButtonBox.AcceptRole)
-        later_button = button_box.addButton("後で", QtWidgets.QDialogButtonBox.RejectRole)
-        
-        layout.addWidget(button_box)
-
-        update_button.clicked.connect(self.accept)
-        later_button.clicked.connect(self.reject)
-
-def show_update_dialog(parent, update_info):
-    """アップデート通知ダイアログを表示する"""
-    if parent and update_info:
-        dialog = UpdateDialog(parent, update_info)
-        dialog.exec_()

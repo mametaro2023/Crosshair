@@ -18,7 +18,7 @@ if IS_WINDOWS:
     import winreg
 
 APP_NAME = "Crosshair"
-GAME_PROCESS_NAME = "r5apex.exe"
+GAME_PROCESS_NAMES = ["r5apex.exe", "r5apex_dx12.exe"]
 
 def get_executable_path():
     if getattr(sys, 'frozen', False):
@@ -80,7 +80,7 @@ class GameMonitorThread(threading.Thread):
     def run(self):
         last_state = False
         while self.running:
-            current_state = any(p.name() == self.process_name for p in psutil.process_iter(['name']))
+            current_state = any(p.name() in self.process_name for p in psutil.process_iter(['name']))
             if current_state != last_state:
                 self.overlay.panel.on_game_state_changed(current_state)
                 last_state = current_state

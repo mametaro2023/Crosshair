@@ -7,9 +7,11 @@ import time
 from pynput import mouse
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+from . import ui
+from . import theme
+from . import dialogs
 from . import config
 from . import utils
-from . import ui
 
 class CrosshairOverlay(QtWidgets.QWidget):
     # シグナルを定義
@@ -252,14 +254,14 @@ class CrosshairOverlay(QtWidgets.QWidget):
     @QtCore.pyqtSlot(dict)
     def show_update_dialog(self, update_info):
         if hasattr(self, 'panel'):
-            dialog = ui.UpdateDialog(self.panel, update_info)
+            dialog = dialogs.UpdateDialog(self.panel, update_info)
             if dialog.exec_() == QtWidgets.QDialog.Accepted:
                 self.start_update_process(update_info['download_url'])
         else:
             print("コントロールパネルが初期化されていません。")
 
     def start_update_process(self, download_url):
-        self.progress_dialog = ui.ProgressDialog(self.panel)
+        self.progress_dialog = dialogs.ProgressDialog(self.panel)
         self.progress_dialog.show()
 
         self.download_thread = threading.Thread(target=self.download_worker, args=(download_url,), daemon=True)
@@ -334,7 +336,7 @@ def check_updates_thread(overlay):
 def gui_main():
     app = QtWidgets.QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(True)
-    ui.apply_dark_theme(app)
+    theme.apply_dark_theme(app)
     
     screens = app.screens()
     overlay = CrosshairOverlay(screens)
