@@ -44,8 +44,9 @@ def apply_dark_theme(app: QtWidgets.QApplication) -> None:
             background-color: #0078d7;
         }
 
+        /* QGroupBox: 透過背景が頻繁な再描画時にゴースト(重なり)を生むので不透明色に変更 */
         QGroupBox {
-            background-color: rgba(44, 49, 53, 0.7);
+            background-color: #2c3135; /* 以前: rgba(44, 49, 53, 0.7) */
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 8px;
             margin-top: 10px;
@@ -240,9 +241,17 @@ class ControlPanel(QtWidgets.QWidget):
         self.setWindowTitle("Crosshair Control Panel")
         self.setGeometry(100, 100, 450, 100)
         self._panel_animations = []
+        # 過剰な update() 呼び出しによるちらつきとゴースト対策用タイマー
+        self._update_timer = QtCore.QTimer(self)
+        self._update_timer.setSingleShot(True)
+        self._update_timer.timeout.connect(self._perform_deferred_update)
 
         self.setObjectName("controlPanel")
         self.setAttribute(QtCore.Qt.WA_StyledBackground, True)
+        self.setAttribute(QtCore.Qt.WA_TranslucentBackground, False)
+        # Opaque 描画でゴースト抑制
+        self.setAttribute(QtCore.Qt.WA_OpaquePaintEvent, True)
+        self.setAttribute(QtCore.Qt.WA_TranslucentBackground, False) # この行を追加
 
         shadow = QtWidgets.QGraphicsDropShadowEffect(self)
         shadow.setBlurRadius(24)
@@ -409,6 +418,11 @@ class ControlPanel(QtWidgets.QWidget):
 
         main_layout.addStretch()
 
+        # GroupBox の背景再描画を確実にし、半透明時の残像を抑える
+        for _gb in (presets_group, general_group, ch_group, dot_group, keys_group):
+            _gb.setAttribute(QtCore.Qt.WA_StyledBackground, True)
+            _gb.setAutoFillBackground(True)
+
         # --- Finalize ---
         if self.apex_monitor_action.isChecked():
             self.master_toggle_btn.setEnabled(False)
@@ -437,7 +451,7 @@ class ControlPanel(QtWidgets.QWidget):
                 setter(color.name())
                 square.setStyleSheet(f"background-color: {color.name()}; border: 1px solid #50555c; border-radius: 4px;")
                 update_callback()
-                self.overlay._set_dirty_and_update_display()
+                self.schedule_overlay_update()
         button.clicked.connect(pick_color)
         layout_.addWidget(button)
         layout_.addStretch()
@@ -571,7 +585,7 @@ class ControlPanel(QtWidgets.QWidget):
             if utils.remove_from_startup(utils.APP_NAME):
                 QtWidgets.QMessageBox.information(self, "設定完了", "スタートアップ設定を解除しました。")
             else:
-                QtWidgets.QMessageBox.warning(self, "設定失敗", "スタートアップからの登録解除に失敗しました。 সন")
+                QtWidgets.QMessageBox.warning(self, "設定失敗", "スタートアップからの登録解除に失敗しました。 سন")
                 self.startup_action.setChecked(True)
 
     @QtCore.pyqtSlot(bool)
@@ -713,52 +727,44 @@ class ControlPanel(QtWidgets.QWidget):
 
     def toggle_crosshair_button(self, checked): 
         self.overlay.crosshair_visible = checked
-        self.overlay.update()
-        self.overlay._set_dirty_and_update_display()
+        self.schedule_overlay_update()
 
     def update_crosshair_shape(self, shape_text):
         self.overlay.crosshair_shape = shape_text
         self.custom_image_widget.setVisible(shape_text == "カスタム画像")
-        self.overlay.update()
-        self.overlay._set_dirty_and_update_display()
+        self.schedule_overlay_update()
 
     def select_custom_image(self):
         path, _ = QtWidgets.QFileDialog.getOpenFileName(self, "画像を選択", "", "画像ファイル (*.png *.jpg *.bmp *.gif)")
         if path:
             self.overlay.crosshair_image_path = path
             self.custom_image_path_label.setText(os.path.basename(path))
-            self.overlay.update()
-            self.overlay._set_dirty_and_update_display()
+            self.schedule_overlay_update()
 
     def toggle_dot_button(self, checked): 
         self.overlay.dot_visible = checked
-        self.overlay.update()
-        self.overlay._set_dirty_and_update_display()
+        self.schedule_overlay_update()
 
     def update_dot_size(self, val): 
         self.overlay.dot_radius = val // 2
         self.dot_value.setText(str(val))
-        self.overlay.update()
-        self.overlay._set_dirty_and_update_display()
+        self.schedule_overlay_update()
 
     def update_alpha(self, val): 
         alpha = round(val / 100, 2)
         self.overlay.crosshair_alpha = alpha
         self.alpha_value.setText(f"{alpha:.2f}")
-        self.overlay.update()
-        self.overlay._set_dirty_and_update_display()
+        self.schedule_overlay_update()
 
     def update_dot_alpha(self, val): 
         alpha = round(val / 100, 2)
         self.overlay.dot_alpha = alpha
         self.dot_alpha_value.setText(f"{self.overlay.dot_alpha:.2f}")
-        self.overlay.update()
-        self.overlay._set_dirty_and_update_display()
+        self.schedule_overlay_update()
 
     def toggle_fade_on_shoot(self, checked):
         self.overlay.fade_on_shoot_enabled = checked
-        self.overlay.update()
-        self.overlay._set_dirty_and_update_display()
+        self.schedule_overlay_update()
 
     def set_crosshair_color(self, val): 
         self.overlay.crosshair_color = val
@@ -773,8 +779,7 @@ class ControlPanel(QtWidgets.QWidget):
         def on_key_selected(key): 
             self.overlay.disable_key(key)
             self.disabled_keys_label.setText(", ".join(self.overlay.disabled_keys))
-            self.overlay.update()
-            self.overlay._set_dirty_and_update_display()
+            self.schedule_overlay_update()
         dlg = KeyCaptureDialog(self, message="無効化したいキーを押してください（Enterキーは無効化できません）", key_callback=on_key_selected)
         dlg.exec_()
 
@@ -786,9 +791,10 @@ class ControlPanel(QtWidgets.QWidget):
         def on_key_selected(key):
             self.overlay.enable_key(key)
             self.disabled_keys_label.setText(", ".join(self.overlay.disabled_keys) if self.overlay.disabled_keys else "なし")
-            self.overlay.update()
+            # 他の無効化キーを再ブロック後まとめて更新
             for k in self.overlay.disabled_keys:
                 if k != key: keyboard.block_key(k)
+            self.schedule_overlay_update()
         
         for k in self.overlay.disabled_keys:
              try: keyboard.unblock_key(k)
@@ -799,8 +805,28 @@ class ControlPanel(QtWidgets.QWidget):
     def enable_all_keys_gui(self):
         self.overlay.enable_all_keys()
         self.disabled_keys_label.setText("なし")
+        self.schedule_overlay_update()
+
+    # --- 更新スロットリング関連 ---
+    def schedule_overlay_update(self):
+        # 50ms 後にまとめて更新 (連続スライダー操作などでの再描画蓄積防止)
+        self.overlay.is_dirty = True  # 既存フラグを保つ
+        self._update_timer.start(50)
+
+    def _perform_deferred_update(self):
+        # 実際の update() と表示再構築
         self.overlay.update()
-        self.overlay._set_dirty_and_update_display()
+        if hasattr(self.overlay, '_set_dirty_and_update_display'):
+            try:
+                self.overlay._set_dirty_and_update_display()
+            except Exception:
+                pass
+
+    # 背景を毎回明示的に塗りつぶして残像を防止
+    def paintEvent(self, event):
+        painter = QtGui.QPainter(self)
+        painter.fillRect(self.rect(), QtGui.QColor(37, 41, 45))  # Window と同色でクリア
+        super().paintEvent(event)
 
 class UpdateDialog(QtWidgets.QDialog):
     def __init__(self, parent, update_info):
