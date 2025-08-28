@@ -1,7 +1,7 @@
 import os
 import json
 
-APP_VERSION = "ver1.5.1"
+APP_VERSION = "ver1.4"
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".crosshair_config.json")
 DEFAULT_PRESET_FOLDER = os.path.join(os.path.expanduser("~"), "Documents", "CrosshairPresets")
 PRESET_EXTENSION = ".mametaro"

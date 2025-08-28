@@ -121,7 +121,7 @@ def check_for_updates(current_version):
                         return None
                     
                     return {
-                        "latest_version": latest_version,
+                        "latest_version": latest_version_str,
                         "download_url": data['assets'][0]['browser_download_url'],
                         "release_notes": data['body']
                     }

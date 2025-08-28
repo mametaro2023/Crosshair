@@ -82,7 +82,7 @@ class ControlPanel(QtWidgets.QWidget):
         monitor_layout.addWidget(self.monitor_selection_box, 1)
         general_layout.addLayout(monitor_layout)
 
-        self.apex_monitor_action = QtWidgets.QCheckBox("Apex Legendsを監視して自動ON/OFF")
+        self.apex_monitor_action = QtWidgets.QCheckBox("Apex Legendsの起動を検出して自動ON/OFF")
         if utils.psutil:
             self.apex_monitor_action.setChecked(self.overlay.monitor_apex)
             self.apex_monitor_action.toggled.connect(self.toggle_apex_monitoring)
@@ -361,24 +361,31 @@ class ControlPanel(QtWidgets.QWidget):
                 self.load_presets()
 
     def set_master_enabled(self, enabled, manual_toggle=False):
-        if self.overlay.master_enabled == enabled:
+        if self.overlay.master_enabled == enabled and not manual_toggle:
             return
 
         self.overlay.master_enabled = enabled
-
-        # Apex監視が有効な場合は、ボタンの見た目を変更しない
-        if hasattr(self, 'master_toggle_btn') and not self.overlay.monitor_apex:
-            if self.overlay.master_enabled:
-                self.master_toggle_btn.setText("オーバーレイ無効化")
-                self.master_toggle_btn.setObjectName("masterToggleButton")
-            else:
-                self.master_toggle_btn.setText("オーバーレイ有効化")
-                self.master_toggle_btn.setObjectName("masterToggleButtonActive")
-            
-            self.master_toggle_btn.style().unpolish(self.master_toggle_btn)
-            self.master_toggle_btn.style().polish(self.master_toggle_btn)
-
+        self.update_master_toggle_button_ui()
         self.overlay.update()
+
+    def update_master_toggle_button_ui(self):
+        if not hasattr(self, 'master_toggle_btn'):
+            return
+
+        if self.overlay.master_enabled:
+            self.master_toggle_btn.setText("オーバーレイ無効化")
+            self.master_toggle_btn.setObjectName("masterToggleButton")
+        else:
+            self.master_toggle_btn.setText("オーバーレイ有効化")
+            self.master_toggle_btn.setObjectName("masterToggleButtonActive")
+
+        if self.overlay.monitor_apex:
+            self.master_toggle_btn.setToolTip("Apex監視が有効です。ゲームの起動/終了時に自動でON/OFFが切り替わります。")
+        else:
+            self.master_toggle_btn.setToolTip("クロスヘアとドットの表示をまとめてON/OFFします")
+
+        self.master_toggle_btn.style().unpolish(self.master_toggle_btn)
+        self.master_toggle_btn.style().polish(self.master_toggle_btn)
 
     def toggle_master_visibility(self):
         self.set_master_enabled(not self.overlay.master_enabled, manual_toggle=True)
@@ -402,18 +409,14 @@ class ControlPanel(QtWidgets.QWidget):
     def on_game_state_changed(self, is_running):
         print(f"ゲーム状態の変更を検知: {{'実行中' if is_running else '終了'}}")
         if self.overlay.monitor_apex:
-            self.set_master_enabled(is_running, manual_toggle=False)
+            self.set_master_enabled(is_running)
 
     def toggle_apex_monitoring(self, checked):
         self.overlay.monitor_apex = checked
         self.overlay.save_global_config()
+        self.master_toggle_btn.setEnabled(True)
 
-        self.master_toggle_btn.setEnabled(not checked)
         if checked:
-            self.master_toggle_btn.setText("オーバーレイ自動制御中")
-            self.master_toggle_btn.setObjectName("masterToggleButtonMonitoring")
-            self.master_toggle_btn.setToolTip("Apex監視が有効なため、手動でのON/OFFはできません。")
-            
             if not utils.psutil:
                 QtWidgets.QMessageBox.warning(self, "ライブラリ不足", "この機能を利用するには 'psutil' が必要です。コマンドプロンプトで 'pip install psutil' を実行してください。")
                 if hasattr(self, 'apex_monitor_action'):
@@ -422,28 +425,18 @@ class ControlPanel(QtWidgets.QWidget):
 
             # 現在のゲームの状態を確認して即座に反映
             is_game_running = any(p.name() in utils.GAME_PROCESS_NAMES for p in utils.psutil.process_iter(['name']))
-            self.set_master_enabled(is_game_running, manual_toggle=False)
+            self.set_master_enabled(is_game_running)
 
             if self.overlay.game_monitor_thread is None:
                 self.overlay.game_monitor_thread = utils.GameMonitorThread(utils.GAME_PROCESS_NAMES, self.overlay)
                 self.overlay.game_monitor_thread.start()
                 print("Apex Legendsの監視を開始しました。")
         else:
-            # ボタンの表示を現在のオーバーレイ状態に基づいて元に戻す
-            if self.overlay.master_enabled:
-                self.master_toggle_btn.setText("オーバーレイ無効化")
-                self.master_toggle_btn.setObjectName("masterToggleButton")
-            else:
-                self.master_toggle_btn.setText("オーバーレイ有効化")
-                self.master_toggle_btn.setObjectName("masterToggleButtonActive")
-
-            self.master_toggle_btn.setToolTip("クロスヘアとドットの表示をまとめてON/OFFします")
             if self.overlay.game_monitor_thread is not None:
                 self.overlay.game_monitor_thread.stop()
                 print("Apex Legendsの監視を停止しています...")
         
-        self.master_toggle_btn.style().unpolish(self.master_toggle_btn)
-        self.master_toggle_btn.style().polish(self.master_toggle_btn)
+        self.update_master_toggle_button_ui()
 
     @QtCore.pyqtSlot()
     def on_monitor_thread_finished(self):
