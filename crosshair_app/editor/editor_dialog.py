@@ -1,5 +1,6 @@
 import json
 import os
+import keyboard
 from PyQt5 import QtCore, QtGui, QtWidgets
 from .canvas import Canvas
 
@@ -35,6 +36,23 @@ class EditorDialog(QtWidgets.QDialog):
         button_box.rejected.connect(self.reject)
         left_panel_layout.addWidget(button_box)
 
+        # ホットキーの登録
+        self.register_hotkeys()
+
+    def register_hotkeys(self):
+        # Ctrl+Z で元に戻す
+        keyboard.add_hotkey('ctrl+z', self.canvas.undo, suppress=False)
+        # Ctrl+Shift+Z でやり直し
+        keyboard.add_hotkey('ctrl+shift+z', self.canvas.redo, suppress=False)
+
+    def unregister_hotkeys(self):
+        keyboard.remove_hotkey('ctrl+z')
+        keyboard.remove_hotkey('ctrl+shift+z')
+
+    def closeEvent(self, event):
+        self.unregister_hotkeys()
+        super().closeEvent(event)
+
     def _create_tools_group(self, parent_layout):
         tools_group = QtWidgets.QGroupBox("ツール")
         tools_layout = QtWidgets.QHBoxLayout(tools_group)
@@ -42,20 +60,32 @@ class EditorDialog(QtWidgets.QDialog):
         pen_button = QtWidgets.QPushButton("ペン")
         pen_button.setCheckable(True)
         pen_button.setChecked(True)
-        pen_button.clicked.connect(lambda: self.canvas.set_tool('pen'))
+        pen_button.clicked.connect(lambda: self.canvas.set_tool('pencil'))
 
         eraser_button = QtWidgets.QPushButton("消しゴム")
         eraser_button.setCheckable(True)
         eraser_button.clicked.connect(lambda: self.canvas.set_tool('eraser'))
+
+        line_button = QtWidgets.QPushButton("直線")
+        line_button.setCheckable(True)
+        line_button.clicked.connect(lambda: self.canvas.set_tool('line'))
+
+        circle_button = QtWidgets.QPushButton("円")
+        circle_button.setCheckable(True)
+        circle_button.clicked.connect(lambda: self.canvas.set_tool('circle'))
 
         # Exclusive buttons
         button_group = QtWidgets.QButtonGroup(self)
         button_group.setExclusive(True)
         button_group.addButton(pen_button)
         button_group.addButton(eraser_button)
+        button_group.addButton(line_button)
+        button_group.addButton(circle_button)
 
         tools_layout.addWidget(pen_button)
         tools_layout.addWidget(eraser_button)
+        tools_layout.addWidget(line_button)
+        tools_layout.addWidget(circle_button)
         parent_layout.addWidget(tools_group)
 
     def _create_palette_group(self, parent_layout):

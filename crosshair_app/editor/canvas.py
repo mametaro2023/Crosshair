@@ -1,5 +1,6 @@
-
+import copy
 from PyQt5 import QtCore, QtGui, QtWidgets
+import math
 
 class Canvas(QtWidgets.QWidget):
     GRID_SIZE = 40
@@ -10,15 +11,24 @@ class Canvas(QtWidgets.QWidget):
         self.grid_data = [[None for _ in range(self.GRID_SIZE)] for _ in range(self.GRID_SIZE)]
         self.pen_color = QtGui.QColor("#00FF66") # Default color
         self.is_eraser = False
+        self.current_tool = "pencil" # "pencil", "eraser", "line", "circle"
+        self.start_pos = None # 直線・円ツールの開始位置
+        self.current_mouse_pos = None # 直線・円ツールの現在のマウス位置 (プレビュー用)
+
+        self.undo_stack = []
+        self.redo_stack = []
+        self.MAX_HISTORY = 50 # 履歴の最大数
 
         self.setMouseTracking(True) # Allow mouseMoveEvent without button press
 
     def set_tool(self, tool):
+        self.current_tool = tool
         self.is_eraser = (tool == 'eraser')
 
     def set_pen_color(self, color):
         self.pen_color = color
         self.is_eraser = False # Color selection implies using the pen
+        self.current_tool = "pencil" # 色選択時はペンツールに切り替える
 
     def get_pixel_data(self):
         """Returns a list of non-transparent pixels for saving."""
@@ -58,22 +68,157 @@ class Canvas(QtWidgets.QWidget):
                 if self.grid_data[y][x]:
                     painter.fillRect(QtCore.QRectF(x * cell_size, y * cell_size, cell_size, cell_size), self.grid_data[y][x])
 
+        # 直線・円ツールのプレビュー描画
+        if self.start_pos and self.current_mouse_pos and \
+           (self.current_tool == "line" or self.current_tool == "circle"):
+            
+            preview_color = QtGui.QColor(self.pen_color)
+            preview_color.setAlpha(128) # 半透明
+            painter.setPen(QtGui.QPen(preview_color, 1)) # 細いペン
+
+            # 描画座標をピクセル単位に変換
+            start_x_px = self.start_pos.x() * cell_size + cell_size / 2
+            start_y_px = self.start_pos.y() * cell_size + cell_size / 2
+            current_x_px = self.current_mouse_pos.x() * cell_size + cell_size / 2
+            current_y_px = self.current_mouse_pos.y() * cell_size + cell_size / 2
+
+            if self.current_tool == "line":
+                painter.drawLine(QtCore.QPointF(start_x_px, start_y_px), QtCore.QPointF(current_x_px, current_y_px))
+            elif self.current_tool == "circle":
+                # 中心と半径から円を描画
+                radius_px = math.sqrt((current_x_px - start_x_px)**2 + (current_y_px - start_y_px)**2)
+                painter.drawEllipse(QtCore.QPointF(start_x_px, start_y_px), radius_px, radius_px)
+
     def _paint_pixel(self, pos):
         cell_size = self.width() / self.GRID_SIZE
         grid_x = int(pos.x() // cell_size)
-        grid_y = int(pos.y() // cell_size)
+        grid_y = int(pos(pos).y() // cell_size)
 
         if 0 <= grid_x < self.GRID_SIZE and 0 <= grid_y < self.GRID_SIZE:
-            if self.is_eraser:
-                self.grid_data[grid_y][grid_x] = None
-            else:
-                self.grid_data[grid_y][grid_x] = self.pen_color
-            self.update()
+            # 変更前の状態を保存
+            old_color = self.grid_data[grid_y][grid_x]
+            new_color = None if self.is_eraser else self.pen_color
+
+            if old_color != new_color:
+                self.grid_data[grid_y][grid_x] = new_color
+                self.update()
 
     def mousePressEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
-            self._paint_pixel(event.pos())
+            self.push_state() # ストローク開始前の状態を保存
+            
+            cell_size = self.width() / self.GRID_SIZE
+            grid_x = int(event.pos().x() // cell_size)
+            grid_y = int(event.pos().y() // cell_size)
+            self.start_pos = QtCore.QPoint(grid_x, grid_y)
+
+            if self.current_tool == "pencil" or self.current_tool == "eraser":
+                self._paint_pixel(event.pos())
 
     def mouseMoveEvent(self, event):
         if event.buttons() & QtCore.Qt.LeftButton:
-            self._paint_pixel(event.pos())
+            cell_size = self.width() / self.GRID_SIZE
+            grid_x = int(event.pos().x() // cell_size)
+            grid_y = int(event.pos().y() // cell_size)
+
+            if self.current_tool == "pencil" or self.current_tool == "eraser":
+                self._paint_pixel(event.pos())
+            elif self.current_tool == "line" or self.current_tool == "circle":
+                # プレビュー用の現在のマウス位置を更新
+                self.current_mouse_pos = QtCore.QPoint(grid_x, grid_y)
+                self.update() # プレビューを再描画
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == QtCore.Qt.LeftButton:
+            cell_size = self.width() / self.GRID_SIZE
+            end_x = int(event.pos().x() // cell_size)
+            end_y = int(event.pos().y() // cell_size)
+            end_pos = QtCore.QPoint(end_x, end_y)
+
+            if self.current_tool == "line":
+                self._draw_line(self.start_pos, end_pos, self.pen_color)
+            elif self.current_tool == "circle":
+                self._draw_circle(self.start_pos, end_pos, self.pen_color)
+            
+            self.start_pos = None # 描画終了
+            self.current_mouse_pos = None # プレビューをクリア
+            self.update() # 最終描画を反映
+
+    def _draw_line(self, p1, p2, color):
+        """Bresenham's line algorithm"""
+        x1, y1 = p1.x(), p1.y()
+        x2, y2 = p2.x(), p2.y()
+
+        dx = abs(x2 - x1)
+        dy = abs(y2 - y1)
+        sx = 1 if x1 < x2 else -1
+        sy = 1 if y1 < y2 else -1
+        err = dx - dy
+
+        while True:
+            if 0 <= x1 < self.GRID_SIZE and 0 <= y1 < self.GRID_SIZE:
+                self.grid_data[y1][x1] = color
+            if x1 == x2 and y1 == y2:
+                break
+            e2 = 2 * err
+            if e2 > -dy:
+                err -= dy
+                x1 += sx
+            if e2 < dx:
+                err += dx
+                y1 += sy
+
+    def _draw_circle(self, center, end_point, color):
+        """Midpoint circle algorithm"""
+        xc, yc = center.x(), center.y()
+        radius = int(math.sqrt((end_point.x() - xc)**2 + (end_point.y() - yc)**2))
+
+        x = radius
+        y = 0
+        err = 0
+
+        while x >= y:
+            self._draw_circle_pixels(xc, yc, x, y, color)
+            y += 1
+            err += 1 + 2*y
+            if 2*(err-x) + 1 > 0:
+                x -= 1
+                err += 1 - 2*x
+
+    def _draw_circle_pixels(self, xc, yc, x, y, color):
+        self._set_pixel_if_valid(xc + x, yc + y, color)
+        self._set_pixel_if_valid(xc - x, yc + y, color)
+        self._set_pixel_if_valid(xc + x, yc - y, color)
+        self._set_pixel_if_valid(xc - x, yc - y, color)
+        self._set_pixel_if_valid(xc + y, yc + x, color)
+        self._set_pixel_if_valid(xc - y, yc + x, color)
+        self._set_pixel_if_valid(xc + y, yc - x, color)
+        self._set_pixel_if_valid(xc - y, yc - x, color)
+
+    def _set_pixel_if_valid(self, x, y, color):
+        if 0 <= x < self.GRID_SIZE and 0 <= y < self.GRID_SIZE:
+            self.grid_data[y][x] = color
+
+    def push_state(self):
+        """現在のキャンバスの状態をundoスタックに保存する"""
+        if len(self.undo_stack) >= self.MAX_HISTORY:
+            self.undo_stack.pop(0) # 古い履歴を削除
+        self.undo_stack.append(copy.deepcopy(self.grid_data))
+        self.redo_stack.clear() # 新しい操作が行われたらredoスタックはクリア
+
+    def apply_state(self, state):
+        """指定された状態をキャンバスに適用する"""
+        self.grid_data = copy.deepcopy(state)
+        self.update()
+
+    def undo(self):
+        """一つ前の状態に戻す"""
+        if self.undo_stack:
+            self.redo_stack.append(copy.deepcopy(self.grid_data))
+            self.apply_state(self.undo_stack.pop())
+
+    def redo(self):
+        """やり直し操作を実行する"""
+        if self.redo_stack:
+            self.undo_stack.append(copy.deepcopy(self.grid_data))
+            self.apply_state(self.redo_stack.pop())
