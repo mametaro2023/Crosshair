@@ -444,6 +444,10 @@ class CrosshairOverlay(QtWidgets.QWidget):
             self.panel.update_master_toggle_button_ui()
 
     def set_toggle_hotkey(self, new_hotkey):
+        if new_hotkey == "半角/全角":
+            QtWidgets.QMessageBox.information(self.panel, "設定不可", "「半角/全角」キーはホットキーとして設定できません。")
+            return
+
         if self.toggle_hotkey:
             try:
                 keyboard.remove_hotkey(self.toggle_hotkey)

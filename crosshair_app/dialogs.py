@@ -71,6 +71,11 @@ class KeyCaptureDialog(QtWidgets.QDialog):
             # エラー表示後も入力を待機し続ける
             self._capture_hotkey_thread()
             return
+        
+        if hotkey == "半角/全角":
+            QtCore.QMetaObject.invokeMethod(self, "_show_ime_key_error", QtCore.Qt.QueuedConnection)
+            self._capture_hotkey_thread()
+            return
 
         self.captured_key = hotkey
         QtCore.QMetaObject.invokeMethod(self, "accept", QtCore.Qt.QueuedConnection)
@@ -78,6 +83,10 @@ class KeyCaptureDialog(QtWidgets.QDialog):
     @QtCore.pyqtSlot()
     def _show_enter_error(self):
         QtWidgets.QMessageBox.information(self, "設定不可", "Enterキーはショートカットキーとして設定できません。")
+
+    @QtCore.pyqtSlot()
+    def _show_ime_key_error(self):
+        QtWidgets.QMessageBox.information(self, "設定不可", "「半角/全角」キーはショートカットキーとして設定できません。")
 
     def exec_(self):
         # バックグラウンドスレッドでキー入力を待機
