@@ -32,6 +32,18 @@ def create_tab(panel):
     panel.fade_on_shoot_checkbox = QtWidgets.QCheckBox("射撃中はクロスヘアを薄くする")
     panel.fade_on_shoot_checkbox.toggled.connect(panel.toggle_fade_on_shoot)
     general_layout.addWidget(panel.fade_on_shoot_checkbox)
+
+    # Drawing Order Selection
+    drawing_order_layout = QtWidgets.QHBoxLayout()
+    drawing_order_label = QtWidgets.QLabel("描画順序:")
+    panel.drawing_order_box = QtWidgets.QComboBox()
+    panel.drawing_order_box.addItem("ドットを上に描画") # Dot on top (current default)
+    panel.drawing_order_box.addItem("クロスヘアを上に描画") # Crosshair on top
+    panel.drawing_order_box.currentIndexChanged.connect(panel.update_drawing_order)
+    drawing_order_layout.addWidget(drawing_order_label)
+    drawing_order_layout.addWidget(panel.drawing_order_box, 1)
+    general_layout.addLayout(drawing_order_layout)
+
     general_layout.addStretch()
     
     return general_tab

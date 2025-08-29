@@ -13,7 +13,8 @@ def load_config():
         "overall_preset_folder": DEFAULT_OVERALL_PRESET_FOLDER,
         "shape_preset_folder": DEFAULT_SHAPE_PRESET_FOLDER,
         "monitor_apex": False,
-        "toggle_hotkey": "ctrl+f1"
+        "toggle_hotkey": "ctrl+f1",
+        "drawing_order": "dot_on_top" # Add this line
     }
     
     if not os.path.exists(CONFIG_FILE):

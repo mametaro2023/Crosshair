@@ -14,20 +14,28 @@ def create_tab(panel):
 
     shape_layout = QtWidgets.QHBoxLayout()
     panel.shape_box = QtWidgets.QComboBox()
-    # アイテムの追加は ui.py の reload_shapes で行うので、ここでは削除
     panel.shape_box.currentTextChanged.connect(panel.update_crosshair_shape)
     shape_layout.addWidget(QtWidgets.QLabel("形状:"))
     shape_layout.addWidget(panel.shape_box, 1)
     ch_layout.addLayout(shape_layout)
 
-    # アドバンスド設定
-    panel.advanced_settings_group = QtWidgets.QGroupBox("アドバンスド設定")
-    advanced_layout = QtWidgets.QFormLayout(panel.advanced_settings_group)
-    advanced_layout.setSpacing(10)
+    # --- アドバンスド設定 --- #
+    # これは十字と円の設定を含むコンテナ
+    panel.advanced_settings_group = QtWidgets.QGroupBox()
+    panel.advanced_settings_group.setContentsMargins(0, 0, 0, 0)
+    advanced_container_layout = QtWidgets.QVBoxLayout(panel.advanced_settings_group)
+    advanced_container_layout.setContentsMargins(10, 10, 10, 10)
+    advanced_container_layout.setSpacing(10)
+
+    # --- 十字アドバンスド設定ウィジェット ---
+    panel.cross_settings_widget = QtWidgets.QWidget()
+    cross_advanced_layout = QtWidgets.QFormLayout(panel.cross_settings_widget)
+    cross_advanced_layout.setContentsMargins(0, 0, 0, 0)
+    cross_advanced_layout.setSpacing(10)
 
     panel.outline_btn = QtWidgets.QCheckBox("輪郭")
     panel.outline_btn.toggled.connect(panel.update_outline_enabled)
-    advanced_layout.addRow(panel.outline_btn)
+    cross_advanced_layout.addRow(panel.outline_btn)
 
     panel.outline_width_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
     panel.outline_width_slider.setRange(1, 6)
@@ -36,7 +44,7 @@ def create_tab(panel):
     outline_width_layout = QtWidgets.QHBoxLayout()
     outline_width_layout.addWidget(panel.outline_width_slider)
     outline_width_layout.addWidget(panel.outline_width_label)
-    advanced_layout.addRow("輪郭の太さ:", outline_width_layout)
+    cross_advanced_layout.addRow("輪郭の太さ:", outline_width_layout)
 
     panel.vline_length_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
     panel.vline_length_slider.setRange(0, 20)
@@ -45,7 +53,7 @@ def create_tab(panel):
     vline_length_layout = QtWidgets.QHBoxLayout()
     vline_length_layout.addWidget(panel.vline_length_slider)
     vline_length_layout.addWidget(panel.vline_length_label)
-    advanced_layout.addRow("縦線の長さ:", vline_length_layout)
+    cross_advanced_layout.addRow("縦線の長さ:", vline_length_layout)
 
     panel.hline_length_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
     panel.hline_length_slider.setRange(0, 20)
@@ -54,7 +62,7 @@ def create_tab(panel):
     hline_length_layout = QtWidgets.QHBoxLayout()
     hline_length_layout.addWidget(panel.hline_length_slider)
     hline_length_layout.addWidget(panel.hline_length_label)
-    advanced_layout.addRow("横線の長さ:", hline_length_layout)
+    cross_advanced_layout.addRow("横線の長さ:", hline_length_layout)
 
     panel.line_thickness_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
     panel.line_thickness_slider.setRange(0, 10)
@@ -63,7 +71,7 @@ def create_tab(panel):
     line_thickness_layout = QtWidgets.QHBoxLayout()
     line_thickness_layout.addWidget(panel.line_thickness_slider)
     line_thickness_layout.addWidget(panel.line_thickness_label)
-    advanced_layout.addRow("線の太さ:", line_thickness_layout)
+    cross_advanced_layout.addRow("線の太さ:", line_thickness_layout)
 
     panel.gap_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
     panel.gap_slider.setRange(0, 20)
@@ -72,10 +80,73 @@ def create_tab(panel):
     gap_layout = QtWidgets.QHBoxLayout()
     gap_layout.addWidget(panel.gap_slider)
     gap_layout.addWidget(panel.gap_label)
-    advanced_layout.addRow("ギャップ:", gap_layout)
+    cross_advanced_layout.addRow("ギャップ:", gap_layout)
 
-    ch_layout.addWidget(panel.advanced_settings_group)
+    advanced_container_layout.addWidget(panel.cross_settings_widget)
 
+    # --- 円アドバンスド設定ウィジェット ---
+    panel.circle_settings_widget = QtWidgets.QWidget()
+    circle_advanced_layout = QtWidgets.QFormLayout(panel.circle_settings_widget)
+    circle_advanced_layout.setContentsMargins(0, 0, 0, 0)
+    circle_advanced_layout.setSpacing(10)
+
+    panel.circle_outline_btn = QtWidgets.QCheckBox("輪郭")
+    panel.circle_outline_btn.toggled.connect(panel.update_circle_outline_enabled)
+    circle_advanced_layout.addRow(panel.circle_outline_btn)
+
+    panel.circle_outline_width_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+    panel.circle_outline_width_slider.setRange(1, 6)
+    panel.circle_outline_width_slider.valueChanged.connect(panel.update_circle_outline_width)
+    panel.circle_outline_width_label = QtWidgets.QLabel()
+    circle_outline_width_layout = QtWidgets.QHBoxLayout()
+    circle_outline_width_layout.addWidget(panel.circle_outline_width_slider)
+    circle_outline_width_layout.addWidget(panel.circle_outline_width_label)
+    circle_advanced_layout.addRow("輪郭の太さ:", circle_outline_width_layout)
+
+    panel.circle_thickness_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+    panel.circle_thickness_slider.setRange(0, 20)
+    panel.circle_thickness_slider.valueChanged.connect(panel.update_circle_thickness)
+    panel.circle_thickness_label = QtWidgets.QLabel()
+    circle_thickness_layout = QtWidgets.QHBoxLayout()
+    circle_thickness_layout.addWidget(panel.circle_thickness_slider)
+    circle_thickness_layout.addWidget(panel.circle_thickness_label)
+    circle_advanced_layout.addRow("線の太さ:", circle_thickness_layout)
+
+    panel.circle_diameter_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+    panel.circle_diameter_slider.setRange(0, 100)
+    panel.circle_diameter_slider.valueChanged.connect(panel.update_circle_diameter)
+    panel.circle_diameter_label = QtWidgets.QLabel()
+    circle_diameter_layout = QtWidgets.QHBoxLayout()
+    circle_diameter_layout.addWidget(panel.circle_diameter_slider)
+    circle_diameter_layout.addWidget(panel.circle_diameter_label)
+    circle_advanced_layout.addRow("円の直径:", circle_diameter_layout)
+
+    advanced_container_layout.addWidget(panel.circle_settings_widget)
+
+    # --- 折りたたみ可能なアドバンスド設定のセットアップ ---
+    collapsible_advanced_layout = QtWidgets.QVBoxLayout()
+    collapsible_advanced_layout.setContentsMargins(0, 0, 0, 0)
+
+    panel.advanced_settings_toggle_btn = QtWidgets.QToolButton()
+    panel.advanced_settings_toggle_btn.setText("アドバンスド設定")
+    panel.advanced_settings_toggle_btn.setToolButtonStyle(QtCore.Qt.ToolButtonTextBesideIcon)
+    panel.advanced_settings_toggle_btn.setArrowType(QtCore.Qt.RightArrow)
+    panel.advanced_settings_toggle_btn.setCheckable(True)
+    panel.advanced_settings_toggle_btn.setChecked(False)
+    panel.advanced_settings_toggle_btn.toggled.connect(panel.advanced_settings_group.setVisible)
+
+    def rotate_arrow(checked):
+        panel.advanced_settings_toggle_btn.setArrowType(QtCore.Qt.DownArrow if checked else QtCore.Qt.RightArrow)
+    panel.advanced_settings_toggle_btn.toggled.connect(rotate_arrow)
+
+    collapsible_advanced_layout.addWidget(panel.advanced_settings_toggle_btn)
+    collapsible_advanced_layout.addWidget(panel.advanced_settings_group)
+
+    panel.advanced_settings_group.setVisible(False)
+
+    ch_layout.addLayout(collapsible_advanced_layout)
+
+    # --- その他のUI要素 ---
     panel.custom_image_widget = QtWidgets.QWidget()
     custom_image_layout = QtWidgets.QHBoxLayout(panel.custom_image_widget)
     custom_image_layout.setContentsMargins(0, 5, 0, 0)
@@ -87,7 +158,6 @@ def create_tab(panel):
     custom_image_layout.addWidget(panel.custom_image_path_label, 1)
     ch_layout.addWidget(panel.custom_image_widget)
 
-    # 色設定UIをコンテナウィジェットに格納
     panel.ch_color_widget = QtWidgets.QWidget()
     ch_color_layout, panel.ch_color_square = panel.make_color_button("色:", lambda: panel.overlay.crosshair_color, panel.set_crosshair_color, lambda: panel.overlay.update())
     ch_color_layout.setContentsMargins(0, 0, 0, 0)
@@ -104,6 +174,7 @@ def create_tab(panel):
     alpha_layout.addWidget(panel.alpha_slider)
     alpha_layout.addWidget(panel.alpha_value_edit)
     ch_layout.addLayout(alpha_layout)
+
     ch_layout.addStretch()
 
     return ch_tab
