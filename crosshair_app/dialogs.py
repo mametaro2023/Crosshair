@@ -72,10 +72,15 @@ class KeyCaptureDialog(QtWidgets.QDialog):
             self._capture_hotkey_thread()
             return
         
-        if hotkey == "半角/全角":
-            QtCore.QMetaObject.invokeMethod(self, "_show_ime_key_error", QtCore.Qt.QueuedConnection)
-            self._capture_hotkey_thread()
-            return
+        # 半角/全角キーが含まれている場合、それを取り除く
+        if "+半角/全角" in hotkey:
+            hotkey = hotkey.replace("+半角/全角", "")
+        
+        # ここで半角/全角キー単体のチェックを削除し、無効化を許可する
+        # if hotkey == "半角/全角":
+        #     QtCore.QMetaObject.invokeMethod(self, "_show_ime_key_error", QtCore.Qt.QueuedConnection)
+        #     self._capture_hotkey_thread()
+        #     return
 
         self.captured_key = hotkey
         QtCore.QMetaObject.invokeMethod(self, "accept", QtCore.Qt.QueuedConnection)
