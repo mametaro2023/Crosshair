@@ -353,6 +353,16 @@ class CrosshairOverlay(QtWidgets.QWidget):
             except Exception as e:
                 print(f"ホットキー '{self.toggle_hotkey}' の再登録に失敗: {e}")
 
+    @QtCore.pyqtSlot(bool, bool)
+    def set_master_enabled(self, enabled, manual_toggle=False):
+        """オーバーレイの表示/非表示をスレッドセーフに切り替える"""
+        if self.master_enabled == enabled and not manual_toggle:
+            return
+        self.master_enabled = enabled
+        self.update() # オーバーレイ自体の再描画
+        # UIの更新は master_visibility_changed シグナル経由で行う
+        self.master_visibility_changed.emit()
+
     @QtCore.pyqtSlot(int)
     def update_progress_dialog(self, value):
         if hasattr(self, 'progress_dialog') and self.progress_dialog.isVisible():

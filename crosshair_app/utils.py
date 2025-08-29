@@ -125,8 +125,9 @@ class GameMonitorThread(threading.Thread):
         while self.running:
             current_state = any(p.name() in self.process_name for p in psutil.process_iter(['name']))
             if current_state != last_state:
-                self.overlay.panel.on_game_state_changed(current_state)
-                last_state = current_state
+                last_state = current_state # Update the local variable
+                # UIの更新はCrosshairOverlayのset_master_enabledに任せる
+                QtCore.QMetaObject.invokeMethod(self.overlay, "set_master_enabled", QtCore.Qt.QueuedConnection, QtCore.Q_ARG(bool, current_state), QtCore.Q_ARG(bool, False)) # manual_toggle=False を明示的に渡す
             time.sleep(2)
         self.overlay.panel.on_monitor_thread_finished()
 

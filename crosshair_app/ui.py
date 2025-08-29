@@ -341,11 +341,8 @@ class ControlPanel(QtWidgets.QWidget):
             self.reload_shapes()
 
     def set_master_enabled(self, enabled, manual_toggle=False):
-        if self.overlay.master_enabled == enabled and not manual_toggle:
-            return
-        self.overlay.master_enabled = enabled
-        self.update_master_toggle_button_ui()
-        self.overlay.update()
+        """CrosshairOverlayのメソッドを呼び出す"""
+        self.overlay.set_master_enabled(enabled, manual_toggle)
 
     def update_master_toggle_button_ui(self):
         if not hasattr(self, 'master_toggle_btn'):
