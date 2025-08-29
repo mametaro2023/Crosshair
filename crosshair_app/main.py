@@ -73,7 +73,14 @@ class CrosshairOverlay(QtWidgets.QWidget):
             "dot_inner_color": "#000000", "disabled_keys": [],
             "crosshair_alpha": 1.0, "dot_alpha": 1.0,
             "crosshair_shape": "十字",
-            "crosshair_image_path": None
+            "crosshair_image_path": None,
+            # 十字アドバンスド設定
+            "crosshair_outline_enabled": True,
+            "crosshair_outline_width": 1,
+            "crosshair_vline_length": 10,
+            "crosshair_hline_length": 10,
+            "crosshair_thickness": 2,
+            "crosshair_gap": 5,
         }
         self.last_selected_preset = loaded_config.get("last_selected", "デフォルト設定")
         self.presets = {"デフォルト設定": self.default_config}
@@ -133,6 +140,15 @@ class CrosshairOverlay(QtWidgets.QWidget):
         self.fade_on_shoot_enabled = config_data.get("fade_on_shoot", False) 
         self.crosshair_shape = config_data.get("crosshair_shape", "十字")
         self.crosshair_image_path = config_data.get("crosshair_image_path", None)
+
+        # 十字アドバンスド設定
+        self.crosshair_outline_enabled = config_data.get("crosshair_outline_enabled", True)
+        self.crosshair_outline_width = config_data.get("crosshair_outline_width", 1)
+        self.crosshair_vline_length = config_data.get("crosshair_vline_length", 10)
+        self.crosshair_hline_length = config_data.get("crosshair_hline_length", 10)
+        self.crosshair_thickness = config_data.get("crosshair_thickness", 2)
+        self.crosshair_gap = config_data.get("crosshair_gap", 5)
+
         self.update()
 
     def get_config(self):
@@ -148,7 +164,14 @@ class CrosshairOverlay(QtWidgets.QWidget):
             "dot_alpha": self.dot_alpha,
             "fade_on_shoot": self.fade_on_shoot_enabled,
             "crosshair_shape": self.crosshair_shape,
-            "crosshair_image_path": self.crosshair_image_path
+            "crosshair_image_path": self.crosshair_image_path,
+            # 十字アドバンスド設定
+            "crosshair_outline_enabled": self.crosshair_outline_enabled,
+            "crosshair_outline_width": self.crosshair_outline_width,
+            "crosshair_vline_length": self.crosshair_vline_length,
+            "crosshair_hline_length": self.crosshair_hline_length,
+            "crosshair_thickness": self.crosshair_thickness,
+            "crosshair_gap": self.crosshair_gap,
         }
 
     def render_crshr(self, painter, path):
@@ -215,22 +238,72 @@ class CrosshairOverlay(QtWidgets.QWidget):
                 else:
                     color = QtGui.QColor(self.crosshair_color)
                     color.setAlphaF(ch_alpha)
-                    pen = QtGui.QPen(color, 2)
-                    painter.setPen(pen)
+                    
                     if shape == "十字":
-                        gap = 10
-                        painter.drawLine(self.center_x - self.size, self.center_y, self.center_x - gap, self.center_y)
-                        painter.drawLine(self.center_x + gap, self.center_y, self.center_x + self.size, self.center_y)
-                        painter.drawLine(self.center_x, self.center_y - self.size, self.center_x, self.center_y - gap)
-                        painter.drawLine(self.center_x, self.center_y + gap, self.center_x, self.center_y + self.size)
-                    elif shape == "十字 (ギャップなし)":
-                        painter.drawLine(self.center_x - self.size, self.center_y, self.center_x + self.size, self.center_y)
-                        painter.drawLine(self.center_x, self.center_y - self.size, self.center_x, self.center_y + self.size)
+                        # 輪郭の描画 (長方形で描画)
+                        if self.crosshair_outline_enabled:
+                            painter.setPen(QtCore.Qt.NoPen) # 輪郭のペンは不要
+                            painter.setBrush(QtGui.QBrush(QtCore.Qt.black)) # 輪郭の色
+
+                            # floatになる可能性があるのでroundで丸める
+                            outline_offset = round((self.crosshair_thickness / 2) + self.crosshair_outline_width)
+
+                            # 縦線 (上) の輪郭
+                            painter.drawRect(
+                                round(self.center_x - outline_offset),
+                                round(self.center_y - self.crosshair_gap - self.crosshair_vline_length - self.crosshair_outline_width), # 上端
+                                round(outline_offset * 2), # 幅
+                                round(self.crosshair_vline_length + self.crosshair_outline_width * 2) # 高さ
+                            )
+                            # 縦線 (下) の輪郭
+                            painter.drawRect(
+                                round(self.center_x - outline_offset),
+                                round(self.center_y + self.crosshair_gap - self.crosshair_outline_width), # 上端
+                                round(outline_offset * 2), # 幅
+                                round(self.crosshair_vline_length + self.crosshair_outline_width * 2) # 高さ
+                            )
+                            # 横線 (左) の輪郭
+                            painter.drawRect(
+                                round(self.center_x - self.crosshair_gap - self.crosshair_hline_length - self.crosshair_outline_width), # 左端
+                                round(self.center_y - outline_offset),
+                                round(self.crosshair_hline_length + self.crosshair_outline_width * 2), # 幅
+                                round(outline_offset * 2) # 高さ
+                            )
+                            # 横線 (右) の輪郭
+                            painter.drawRect(
+                                round(self.center_x + self.crosshair_gap - self.crosshair_outline_width), # 左端
+                                round(self.center_y - outline_offset),
+                                round(self.crosshair_hline_length + self.crosshair_outline_width * 2), # 幅
+                                round(outline_offset * 2) # 高さ
+                            )
+
+                        # 本体の描画
+                        pen = QtGui.QPen(color, self.crosshair_thickness, QtCore.Qt.SolidLine, QtCore.Qt.FlatCap)
+                        painter.setPen(pen)
+                        painter.setBrush(QtCore.Qt.NoBrush) # 本体の描画は塗りつぶしなし
+
+                        # 縦線 (上)
+                        painter.drawLine(self.center_x, self.center_y - self.crosshair_gap - self.crosshair_vline_length,
+                                         self.center_x, self.center_y - self.crosshair_gap)
+                        # 縦線 (下)
+                        painter.drawLine(self.center_x, self.center_y + self.crosshair_gap,
+                                         self.center_x, self.center_y + self.crosshair_gap + self.crosshair_vline_length)
+                        # 横線 (左)
+                        painter.drawLine(self.center_x - self.crosshair_gap - self.crosshair_hline_length, self.center_y,
+                                         self.center_x - self.crosshair_gap, self.center_y)
+                        # 横線 (右)
+                        painter.drawLine(self.center_x + self.crosshair_gap, self.center_y,
+                                         self.center_x + self.crosshair_gap + self.crosshair_hline_length, self.center_y)
+
                     elif shape == "円":
+                        pen = QtGui.QPen(color, 2)
+                        painter.setPen(pen)
                         painter.setBrush(QtCore.Qt.NoBrush)
                         rect = QtCore.QRect(self.center_x - self.size, self.center_y - self.size, self.size * 2, self.size * 2)
                         painter.drawEllipse(rect)
                     elif shape == "矢印 (シェブロン)":
+                        pen = QtGui.QPen(color, 2)
+                        painter.setPen(pen)
                         arrow_size = self.size // 2
                         points = [
                             QtCore.QPoint(self.center_x - arrow_size, self.center_y + arrow_size),

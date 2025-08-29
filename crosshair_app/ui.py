@@ -180,14 +180,18 @@ class ControlPanel(QtWidgets.QWidget):
         self.shape_box.clear()
 
         # 基本形状
-        shapes = ["十字", "十字 (ギャップなし)", "円", "矢印 (シェブロン)"]
+        shapes = ["十字", "円", "矢印 (シェブロン)"]
         self.shape_box.addItems(shapes)
 
         # カスタム形状 (.crshr)
+        self.custom_crshr_shapes = [] # Store custom shapes here
         try:
-            custom_shapes = [os.path.splitext(f)[0] for f in os.listdir(self.overlay.shape_preset_folder) if f.endswith(".crshr")]
-            if custom_shapes:
-                self.shape_box.addItems(sorted(custom_shapes))
+            for f in os.listdir(self.overlay.shape_preset_folder):
+                if f.endswith(".crshr"):
+                    shape_name = os.path.splitext(f)[0]
+                    self.custom_crshr_shapes.append(shape_name)
+            if self.custom_crshr_shapes:
+                self.shape_box.addItems(sorted(self.custom_crshr_shapes))
         except Exception as e:
             print(f"カスタム形状の読み込みに失敗: {e}")
 
@@ -468,8 +472,18 @@ class ControlPanel(QtWidgets.QWidget):
         self.dot_btn.setChecked(self.overlay.dot_visible)
         shape = self.overlay.crosshair_shape
         self.shape_box.setCurrentText(shape)
+        # Determine if the shape is one that doesn't use color settings
         is_image_based = shape in ["MAME", "カスタム画像"]
-        self.ch_color_widget.setVisible(not is_image_based)
+        
+        # Ensure custom_crshr_shapes is initialized, though it should be by reload_shapes
+        if not hasattr(self, 'custom_crshr_shapes'):
+            self.custom_crshr_shapes = [] # Fallback, should not be needed if reload_shapes runs first
+
+        is_crshr_shape = shape in self.custom_crshr_shapes
+
+        is_non_color_customizable_shape = is_image_based or is_crshr_shape
+
+        self.ch_color_widget.setVisible(not is_non_color_customizable_shape) # <--- Modified line
         is_custom_image = self.overlay.crosshair_shape == "カスタム画像"
         self.custom_image_widget.setVisible(is_custom_image)
         if is_custom_image:
@@ -497,6 +511,66 @@ class ControlPanel(QtWidgets.QWidget):
         self.fade_on_shoot_checkbox.blockSignals(False)
         self.crosshair_btn.blockSignals(False)
         self.dot_btn.blockSignals(False)
+
+        # アドバンスド設定のUI更新
+        is_cross_shape = self.overlay.crosshair_shape == "十字"
+        self.advanced_settings_group.setVisible(is_cross_shape)
+        if is_cross_shape:
+            self.outline_btn.blockSignals(True)
+            self.outline_width_slider.blockSignals(True)
+            self.vline_length_slider.blockSignals(True)
+            self.hline_length_slider.blockSignals(True)
+            self.line_thickness_slider.blockSignals(True)
+            self.gap_slider.blockSignals(True)
+
+            self.outline_btn.setChecked(self.overlay.crosshair_outline_enabled)
+            self.outline_width_slider.setValue(self.overlay.crosshair_outline_width)
+            self.vline_length_slider.setValue(self.overlay.crosshair_vline_length)
+            self.hline_length_slider.setValue(self.overlay.crosshair_hline_length)
+            self.line_thickness_slider.setValue(self.overlay.crosshair_thickness)
+            self.gap_slider.setValue(self.overlay.crosshair_gap)
+
+            self.outline_width_label.setText(f"{self.overlay.crosshair_outline_width}px")
+            self.vline_length_label.setText(f"{self.overlay.crosshair_vline_length}px")
+            self.hline_length_label.setText(f"{self.overlay.crosshair_hline_length}px")
+            self.line_thickness_label.setText(f"{self.overlay.crosshair_thickness}px")
+            self.gap_label.setText(f"{self.overlay.crosshair_gap}px")
+
+            self.outline_btn.blockSignals(False)
+            self.outline_width_slider.blockSignals(False)
+            self.vline_length_slider.blockSignals(False)
+            self.hline_length_slider.blockSignals(False)
+            self.line_thickness_slider.blockSignals(False)
+            self.gap_slider.blockSignals(False)
+
+    def update_outline_enabled(self, checked):
+        self.overlay.crosshair_outline_enabled = checked
+        self.schedule_overlay_update()
+
+    def update_outline_width(self, val):
+        self.overlay.crosshair_outline_width = val
+        self.outline_width_label.setText(f"{val}px")
+        self.schedule_overlay_update()
+
+    def update_vline_length(self, val):
+        self.overlay.crosshair_vline_length = val
+        self.vline_length_label.setText(f"{val}px")
+        self.schedule_overlay_update()
+
+    def update_hline_length(self, val):
+        self.overlay.crosshair_hline_length = val
+        self.hline_length_label.setText(f"{val}px")
+        self.schedule_overlay_update()
+
+    def update_line_thickness(self, val):
+        self.overlay.crosshair_thickness = val
+        self.line_thickness_label.setText(f"{val}px")
+        self.schedule_overlay_update()
+
+    def update_gap(self, val):
+        self.overlay.crosshair_gap = val
+        self.gap_label.setText(f"{val}px")
+        self.schedule_overlay_update()
 
     def monitor_changed(self, index):
         if index >= 0 and index != self.overlay.selected_monitor_index:
@@ -543,12 +617,27 @@ class ControlPanel(QtWidgets.QWidget):
             return
 
         self.overlay.crosshair_shape = shape_text
+
+        # Determine if the shape is one that doesn't use color settings
         is_image_based = shape_text in ["MAME", "カスタム画像"]
-        self.ch_color_widget.setVisible(not is_image_based)
+        
+        # Check if it's a .crshr file using the stored list
+        # Ensure custom_crshr_shapes is initialized, though it should be by reload_shapes
+        if not hasattr(self, 'custom_crshr_shapes'):
+            self.custom_crshr_shapes = [] # Fallback, should not be needed if reload_shapes runs first
+
+        is_crshr_shape = shape_text in self.custom_crshr_shapes
+        print(f"custom_crshr_shapes: {self.custom_crshr_shapes}") # Debug print
+        print(f"is_crshr_shape: {is_crshr_shape}") # Debug print
+
+        is_non_color_customizable_shape = is_image_based or is_crshr_shape
+
+        self.ch_color_widget.setVisible(not is_non_color_customizable_shape)
         self.custom_image_widget.setVisible(shape_text == "カスタム画像")
         if shape_text == "MAME":
             utils.download_mame_png_if_missing(self)
         self.schedule_overlay_update()
+        self.update_control_panel_ui()
 
     def select_custom_image(self):
         path, _ = QtWidgets.QFileDialog.getOpenFileName(self, "画像を選択", "", "画像ファイル (*.png *.jpg *.bmp *.gif)")
