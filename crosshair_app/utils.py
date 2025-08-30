@@ -279,7 +279,7 @@ def parse_valorant_crosshair_code(code):
         't': ('crosshair_outline_width', int),
         'd': ('dot_alpha', float),
         'z': ('dot_radius', lambda x: int(float(x) / 2)), # Valorant 'z' is diameter, our 'dot_radius' is radius
-        'a': ('crosshair_alpha', float),
+        '0a': ('crosshair_inner_alpha', float), # Changed from crosshair_alpha to crosshair_inner_alpha
         '0l': ('crosshair_hline_length', int),
         '0v': ('crosshair_vline_length', int),
         '0o': ('crosshair_gap', int), # Corrected from '0g' to '0o'
@@ -348,5 +348,12 @@ def parse_valorant_crosshair_code(code):
     # Handle 0v default to 0l if 0v is not present
     if 'crosshair_hline_length' in settings and 'crosshair_vline_length' not in settings:
         settings['crosshair_vline_length'] = settings['crosshair_hline_length']
+
+    # Set crosshair_alpha to 1.0 if no advanced crosshair parameters are present
+    advanced_crosshair_params = ['crosshair_hline_length', 'crosshair_vline_length', 'crosshair_gap', 'crosshair_thickness']
+    is_advanced_crosshair = any(param in settings for param in advanced_crosshair_params)
+
+    if not is_advanced_crosshair:
+        settings['crosshair_alpha'] = 1.0 # Set overall crosshair alpha to 1.0 for non-advanced crosshairs
 
     return settings

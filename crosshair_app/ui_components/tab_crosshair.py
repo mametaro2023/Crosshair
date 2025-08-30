@@ -82,6 +82,15 @@ def create_tab(panel):
     line_thickness_layout.addWidget(panel.line_thickness_label)
     cross_advanced_layout.addRow("線の太さ:", line_thickness_layout)
 
+    panel.crosshair_inner_alpha_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+    panel.crosshair_inner_alpha_slider.setRange(0, 100)
+    panel.crosshair_inner_alpha_slider.valueChanged.connect(panel.update_crosshair_inner_alpha)
+    panel.crosshair_inner_alpha_label = QtWidgets.QLabel()
+    crosshair_inner_alpha_layout = QtWidgets.QHBoxLayout()
+    crosshair_inner_alpha_layout.addWidget(panel.crosshair_inner_alpha_slider)
+    crosshair_inner_alpha_layout.addWidget(panel.crosshair_inner_alpha_label)
+    cross_advanced_layout.addRow("内側の透明度:", crosshair_inner_alpha_layout)
+
     panel.gap_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
     panel.gap_slider.setRange(0, 20)
     panel.gap_slider.valueChanged.connect(panel.update_gap)

@@ -30,6 +30,11 @@ class CrosshairOverlayBase(QtWidgets.QWidget):
         self.center_y = 0
         self.toggle_hotkey = None
 
+        # Explicitly initialize alpha values for robustness
+        self.crosshair_alpha = 1.0
+        self.crosshair_inner_alpha = 1.0
+        self.dot_alpha = 1.0
+
         self.setWindowFlags(
             QtCore.Qt.FramelessWindowHint |
             QtCore.Qt.WindowStaysOnTopHint |
@@ -64,10 +69,11 @@ class CrosshairOverlayBase(QtWidgets.QWidget):
         os.makedirs(self.overall_preset_folder, exist_ok=True)
         os.makedirs(self.shape_preset_folder, exist_ok=True)
         self.default_config = {
-            "crosshair_visible": True, "dot_visible": True, "dot_radius": 5,
+            "crosshair_visible": True,             "dot_visible": True, "dot_radius": 5,
+            "dot_shape": "円",
             "crosshair_color": "#00FF66", "dot_outer_color": "#FFFFFF",
             "dot_inner_color": "#000000", "disabled_keys": [],
-            "crosshair_alpha": 1.0, "dot_alpha": 1.0,
+            "crosshair_alpha": 1.0, "crosshair_inner_alpha": 1.0, "dot_alpha": 1.0,
             "crosshair_shape": "十字",
             "crosshair_image_path": None,
             # 十字アドバンスド設定
@@ -146,6 +152,7 @@ class CrosshairOverlayBase(QtWidgets.QWidget):
         self.crosshair_visible = config_data.get("crosshair_visible", True)
         self.dot_visible = config_data.get("dot_visible", True)
         self.dot_radius = config_data.get("dot_radius", 5)
+        self.dot_shape = config_data.get("dot_shape", "円")
         self.crosshair_color = config_data.get("crosshair_color", "#00FF66")
         self.dot_outer_color = config_data.get("dot_outer_color", "#FFFFFF")
         self.dot_inner_color = config_data.get("dot_inner_color", "#000000")
@@ -188,6 +195,7 @@ class CrosshairOverlayBase(QtWidgets.QWidget):
             "crosshair_visible": self.crosshair_visible,
             "dot_visible": self.dot_visible,
             "dot_radius": self.dot_radius,
+            "dot_shape": self.dot_shape,
             "crosshair_color": self.crosshair_color,
             "dot_outer_color": self.dot_outer_color,
             "dot_inner_color": self.dot_inner_color,
@@ -245,4 +253,6 @@ class CrosshairOverlayBase(QtWidgets.QWidget):
         #         keyboard.remove_hotkey(self.toggle_hotkey)
         #     except (KeyError, AttributeError):
         #         pass
+        self.save_global_config()
+    #         pass
         self.save_global_config()

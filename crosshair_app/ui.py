@@ -146,6 +146,7 @@ class ControlPanel(QtWidgets.QWidget):
     update_dot_size = handlers.update_dot_size
     update_alpha = handlers.update_alpha
     update_dot_alpha = handlers.update_dot_alpha
+    update_dot_shape = handlers.update_dot_shape
     toggle_fade_on_shoot = handlers.toggle_fade_on_shoot
     set_crosshair_color = handlers.set_crosshair_color
     set_dot_outer_color = handlers.set_dot_outer_color
@@ -165,6 +166,7 @@ class ControlPanel(QtWidgets.QWidget):
     update_image_crosshair_size = handlers.update_image_crosshair_size
 
     update_crosshair_outline_alpha = handlers.update_crosshair_outline_alpha
+    update_crosshair_inner_alpha = handlers.update_crosshair_inner_alpha # New line
     update_circle_outline_alpha = handlers.update_circle_outline_alpha
     update_chevron_outline_alpha = handlers.update_chevron_outline_alpha
 

@@ -29,11 +29,13 @@ def update_control_panel_ui(self):
     self.crosshair_outline_alpha_slider.blockSignals(True)
     self.circle_outline_alpha_slider.blockSignals(True)
     self.chevron_outline_alpha_slider.blockSignals(True)
+    self.dot_shape_box.blockSignals(True)
 
     # --- Update General and Non-Shape-Specific UI ---
     self.monitor_selection_box.setCurrentIndex(self.overlay.selected_monitor_index)
     self.crosshair_btn.setChecked(self.overlay.crosshair_visible)
     self.dot_btn.setChecked(self.overlay.dot_visible)
+    self.dot_shape_box.setCurrentText(self.overlay.dot_shape)
     shape = self.overlay.crosshair_shape
     self.shape_box.setCurrentText(shape)
 
@@ -163,6 +165,7 @@ def update_control_panel_ui(self):
     self.crosshair_outline_alpha_slider.blockSignals(False)
     self.circle_outline_alpha_slider.blockSignals(False)
     self.chevron_outline_alpha_slider.blockSignals(False)
+    self.dot_shape_box.blockSignals(False)
 
     self._initial_load_complete = True
 

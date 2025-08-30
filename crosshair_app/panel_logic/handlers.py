@@ -195,6 +195,11 @@ def update_crosshair_outline_alpha(self, val):
     self.crosshair_outline_alpha_label.setText(f"{val}%")
     self.schedule_overlay_update()
 
+def update_crosshair_inner_alpha(self, val):
+    self.overlay.crosshair_inner_alpha = round(val / 100, 2)
+    self.crosshair_inner_alpha_label.setText(f"{val}%")
+    self.schedule_overlay_update()
+
 def update_circle_outline_alpha(self, val):
     self.overlay.circle_outline_alpha = round(val / 100, 2)
     self.circle_outline_alpha_label.setText(f"{val}%")
@@ -245,3 +250,7 @@ def import_valorant_crosshair(self):
 
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "インポート失敗", f"Valorantクロスヘアコードの解析に失敗しました:\n{e}")
+
+def update_dot_shape(self, shape_text):
+    self.overlay.dot_shape = shape_text
+    self.schedule_overlay_update()

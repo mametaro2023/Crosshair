@@ -12,6 +12,18 @@ def create_tab(panel):
     panel.dot_btn.toggled.connect(panel.toggle_dot_button)
     dot_layout.addWidget(panel.dot_btn)
 
+    # Dot Shape Selection
+    dot_shape_layout = QtWidgets.QHBoxLayout()
+    dot_shape_label = QtWidgets.QLabel("形状:")
+    panel.dot_shape_box = QtWidgets.QComboBox()
+    panel.dot_shape_box.addItem("円")
+    panel.dot_shape_box.addItem("正方形")
+    panel.dot_shape_box.addItem("正三角形上向き")
+    panel.dot_shape_box.currentTextChanged.connect(panel.update_dot_shape)
+    dot_shape_layout.addWidget(dot_shape_label)
+    dot_shape_layout.addWidget(panel.dot_shape_box, 1)
+    dot_layout.addLayout(dot_shape_layout)
+
     dotsize_layout = QtWidgets.QHBoxLayout()
     panel.dot_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
     panel.dot_slider.setRange(0, 100)

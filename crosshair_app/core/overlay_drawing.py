@@ -1,5 +1,6 @@
 import os
 import json
+import math
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 class OverlayDrawingMixin:
@@ -64,78 +65,100 @@ class OverlayDrawingMixin:
                     target_rect = QtCore.QRect(self.center_x - target_size // 2, self.center_y - target_size // 2, target_size, target_size)
                     painter.drawPixmap(target_rect, pixmap)
             else:
-                color = QtGui.QColor(self.crosshair_color)
-                color.setAlphaF(ch_alpha)
+                color = QtGui.QColor(self.crosshair_color) # Moved here
+                color.setAlphaF(ch_alpha) # Moved here
                 
                 if self.crosshair_shape == "十字":
-                    # 輪郭の描画 (長方形で描画)
-                    if self.crosshair_outline_enabled:
-                        painter.setPen(QtCore.Qt.NoPen) # 輪郭のペンは不要
+                    # Debugging: Print values
+                    print(f"Debug: hline_length={self.crosshair_hline_length}, vline_length={self.crosshair_vline_length}, gap={self.crosshair_gap}, thickness={self.crosshair_thickness}, outline_width={self.crosshair_outline_width}")
+
+                    # 輪郭の描画
+                    if self.crosshair_outline_enabled and self.crosshair_outline_width > 0:
                         outline_color = QtGui.QColor(QtCore.Qt.black)
                         outline_color.setAlphaF(self.crosshair_outline_alpha)
-                        painter.setBrush(QtGui.QBrush(outline_color)) # 輪郭の色
+                        painter.setPen(QtCore.Qt.NoPen) # 輪郭は塗りつぶしなのでペンは不要
+                        painter.setBrush(QtGui.QBrush(outline_color)) # 輪郭の色で塗りつぶす
 
-                        # floatになる可能性があるのでroundで丸める
-                        outline_offset = round((self.crosshair_thickness / 2) + self.crosshair_outline_width)
-
+                        half_thickness = self.crosshair_thickness / 2.0
+                        
                         # 縦線 (上) の輪郭
-                        painter.drawRect(
-                            round(self.center_x - outline_offset),
-                            round(self.center_y - self.crosshair_gap - self.crosshair_vline_length - self.crosshair_outline_width), # 上端
-                            round(outline_offset * 2), # 幅
-                            round(self.crosshair_vline_length + self.crosshair_outline_width * 2) # 高さ
+                        rect_v_top_outline = QtCore.QRectF(
+                            self.center_x - (half_thickness + self.crosshair_outline_width),
+                            self.center_y - self.crosshair_gap - self.crosshair_vline_length - self.crosshair_outline_width,
+                            self.crosshair_thickness + self.crosshair_outline_width * 2,
+                            self.crosshair_vline_length + self.crosshair_outline_width * 2
                         )
+                        painter.drawRect(rect_v_top_outline)
+
                         # 縦線 (下) の輪郭
-                        painter.drawRect(
-                            round(self.center_x - outline_offset),
-                            round(self.center_y + self.crosshair_gap - self.crosshair_outline_width), # 上端
-                            round(outline_offset * 2), # 幅
-                            round(self.crosshair_vline_length + self.crosshair_outline_width * 2) # 高さ
+                        rect_v_bottom_outline = QtCore.QRectF(
+                            self.center_x - (half_thickness + self.crosshair_outline_width),
+                            self.center_y + self.crosshair_gap - self.crosshair_outline_width,
+                            self.crosshair_thickness + self.crosshair_outline_width * 2,
+                            self.crosshair_vline_length + self.crosshair_outline_width * 2
                         )
+                        painter.drawRect(rect_v_bottom_outline)
+
                         # 横線 (左) の輪郭
-                        painter.drawRect(
-                            round(self.center_x - self.crosshair_gap - self.crosshair_hline_length - self.crosshair_outline_width), # 左端
-                            round(self.center_y - outline_offset),
-                            round(self.crosshair_hline_length + self.crosshair_outline_width * 2), # 幅
-                            round(outline_offset * 2) # 高さ
+                        rect_h_left_outline = QtCore.QRectF(
+                            self.center_x - self.crosshair_gap - self.crosshair_hline_length - self.crosshair_outline_width,
+                            self.center_y - (half_thickness + self.crosshair_outline_width),
+                            self.crosshair_hline_length + self.crosshair_outline_width * 2,
+                            self.crosshair_thickness + self.crosshair_outline_width * 2
                         )
+                        painter.drawRect(rect_h_left_outline)
+
                         # 横線 (右) の輪郭
-                        painter.drawRect(
-                            round(self.center_x + self.crosshair_gap - self.crosshair_outline_width), # 左端
-                            round(self.center_y - outline_offset),
-                            round(self.crosshair_hline_length + self.crosshair_outline_width * 2), # 幅
-                            round(outline_offset * 2) # 高さ
+                        rect_h_right_outline = QtCore.QRectF(
+                            self.center_x + self.crosshair_gap - self.crosshair_outline_width,
+                            self.center_y - (half_thickness + self.crosshair_outline_width),
+                            self.crosshair_hline_length + self.crosshair_outline_width * 2,
+                            self.crosshair_thickness + self.crosshair_outline_width * 2
                         )
-
+                        painter.drawRect(rect_h_right_outline)
+                        
                     # 本体の描画
-                    if self.crosshair_thickness == 0:
-                        pen = QtCore.Qt.NoPen
-                    else:
-                        pen = QtGui.QPen(color, self.crosshair_thickness, QtCore.Qt.SolidLine, QtCore.Qt.FlatCap)
-                    
-                    painter.setPen(pen)
-                    painter.setBrush(QtCore.Qt.NoBrush) # 本体の描画は塗りつぶしなし
-
-                    # 1pxの線の場合、アンチエイリアシングを一時的に無効にする
-                    if self.crosshair_thickness == 1:
-                        painter.setRenderHint(QtGui.QPainter.Antialiasing, False)
+                    # 内側の透明度を適用
+                    inner_color = QtGui.QColor(self.crosshair_color)
+                    inner_color.setAlphaF(self.crosshair_inner_alpha)
+                    painter.setPen(QtCore.Qt.NoPen) # 本体は塗りつぶしなのでペンは不要
+                    painter.setBrush(QtGui.QBrush(inner_color)) # 本体の色で塗りつぶす
 
                     # 縦線 (上)
-                    painter.drawLine(self.center_x, self.center_y - self.crosshair_gap - self.crosshair_vline_length,
-                                     self.center_x, self.center_y - self.crosshair_gap)
+                    rect_v_top_main = QtCore.QRectF(
+                        self.center_x - half_thickness,
+                        self.center_y - self.crosshair_gap - self.crosshair_vline_length,
+                        self.crosshair_thickness,
+                        self.crosshair_vline_length
+                    )
+                    painter.drawRect(rect_v_top_main)
+
                     # 縦線 (下)
-                    painter.drawLine(self.center_x, self.center_y + self.crosshair_gap,
-                                     self.center_x, self.center_y + self.crosshair_gap + self.crosshair_vline_length)
+                    rect_v_bottom_main = QtCore.QRectF(
+                        self.center_x - half_thickness,
+                        self.center_y + self.crosshair_gap,
+                        self.crosshair_thickness,
+                        self.crosshair_vline_length
+                    )
+                    painter.drawRect(rect_v_bottom_main)
+
                     # 横線 (左)
-                    painter.drawLine(self.center_x - self.crosshair_gap - self.crosshair_hline_length, self.center_y,
-                                     self.center_x - self.crosshair_gap, self.center_y)
+                    rect_h_left_main = QtCore.QRectF(
+                        self.center_x - self.crosshair_gap - self.crosshair_hline_length,
+                        self.center_y - half_thickness,
+                        self.crosshair_hline_length,
+                        self.crosshair_thickness
+                    )
+                    painter.drawRect(rect_h_left_main)
+
                     # 横線 (右)
-                    painter.drawLine(self.center_x + self.crosshair_gap, self.center_y,
-                                     self.center_x + self.crosshair_gap + self.crosshair_hline_length, self.center_y)
-                    
-                    # アンチエイリアシングを元に戻す
-                    if self.crosshair_thickness == 1:
-                        painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+                    rect_h_right_main = QtCore.QRectF(
+                        self.center_x + self.crosshair_gap,
+                        self.center_y - half_thickness,
+                        self.crosshair_hline_length,
+                        self.crosshair_thickness
+                    )
+                    painter.drawRect(rect_h_right_main)
 
                 elif self.crosshair_shape == "円":
                     # 直径は線の内側から測定されるため、描画上の中心半径を計算
@@ -226,13 +249,66 @@ class OverlayDrawingMixin:
             outer_color.setAlphaF(dot_alpha)
             painter.setBrush(QtGui.QBrush(outer_color))
             painter.setPen(QtGui.QPen(outer_color))
-            painter.drawEllipse(QtCore.QRect(self.center_x - self.dot_radius, self.center_y - self.dot_radius, self.dot_radius * 2, self.dot_radius * 2))
-            if self.dot_radius > 1:
-                inner_r = self.dot_radius - 1
-                inner_color = QtGui.QColor(self.dot_inner_color)
-                inner_color.setAlphaF(dot_alpha)
-                painter.setBrush(QtGui.QBrush(inner_color)); painter.setPen(QtGui.QPen(inner_color))
-                painter.drawEllipse(QtCore.QRect(self.center_x - inner_r, self.center_y - inner_r, inner_r * 2, inner_r * 2))
+
+            if self.dot_shape == "円":
+                painter.drawEllipse(QtCore.QRect(self.center_x - self.dot_radius, self.center_y - self.dot_radius, self.dot_radius * 2, self.dot_radius * 2))
+                if self.dot_radius > 1:
+                    inner_r = self.dot_radius - 1
+                    inner_color = QtGui.QColor(self.dot_inner_color)
+                    inner_color.setAlphaF(dot_alpha)
+                    painter.setBrush(QtGui.QBrush(inner_color)); painter.setPen(QtGui.QPen(inner_color))
+                    painter.drawEllipse(QtCore.QRect(self.center_x - inner_r, self.center_y - inner_r, inner_r * 2, inner_r * 2))
+            elif self.dot_shape == "正方形":
+                side_length = self.dot_radius * 2
+                painter.drawRect(QtCore.QRect(self.center_x - self.dot_radius, self.center_y - self.dot_radius, side_length, side_length))
+                if self.dot_radius > 1:
+                    inner_r = self.dot_radius - 1
+                    inner_color = QtGui.QColor(self.dot_inner_color)
+                    inner_color.setAlphaF(dot_alpha)
+                    painter.setBrush(QtGui.QBrush(inner_color)); painter.setPen(QtGui.QPen(inner_color))
+                    painter.drawRect(QtCore.QRect(self.center_x - inner_r, self.center_y - inner_r, inner_r * 2, inner_r * 2))
+            elif self.dot_shape == "正三角形上向き":
+                # 正三角形の計算
+                # dot_radius が外側の三角形の半径、dot_radius - 1 が内側の三角形の半径と考える
+                
+                # 外側の三角形 (輪郭用) の計算
+                outer_side_length = self.dot_radius * 2.0
+                outer_height = outer_side_length * (math.sqrt(3) / 2)
+                
+                # 外側の三角形の頂点 (上の頂点が self.center_y に来るように)
+                outer_points = [
+                    QtCore.QPointF(self.center_x, self.center_y), # 上の頂点
+                    QtCore.QPointF(self.center_x - outer_side_length / 2, self.center_y + outer_height), # 左下の頂点
+                    QtCore.QPointF(self.center_x + outer_side_length / 2, self.center_y + outer_height)  # 右下の頂点
+                ]
+
+                # 輪郭の描画 (dot_radius > 1 の場合のみ)
+                if self.dot_radius > 1:
+                    outline_color = QtGui.QColor(self.dot_outer_color)
+                    outline_color.setAlphaF(dot_alpha)
+                    outline_pen_width = 1 
+                    
+                    painter.setPen(QtGui.QPen(outline_color, outline_pen_width, QtCore.Qt.SolidLine, QtCore.Qt.RoundCap, QtCore.Qt.RoundJoin))
+                    painter.setBrush(QtCore.Qt.NoBrush) 
+                    painter.drawPolygon(QtGui.QPolygonF(outer_points))
+
+                # 内側の三角形 (本体) の計算
+                inner_side_length = (self.dot_radius - 1) * 2.0 if self.dot_radius > 1 else self.dot_radius * 2.0
+                inner_height = inner_side_length * (math.sqrt(3) / 2)
+
+                # 内側の三角形の頂点 (上の頂点が self.center_y に来るように)
+                inner_points = [
+                    QtCore.QPointF(self.center_x, self.center_y), # 上の頂点
+                    QtCore.QPointF(self.center_x - inner_side_length / 2, self.center_y + inner_height), # 左下の頂点
+                    QtCore.QPointF(self.center_x + inner_side_length / 2, self.center_y + inner_height), # 右下の頂点
+                ]
+
+                # 本体の描画
+                fill_color = QtGui.QColor(self.dot_inner_color) if self.dot_radius > 1 else QtGui.QColor(self.dot_outer_color)
+                fill_color.setAlphaF(dot_alpha)
+                painter.setBrush(QtGui.QBrush(fill_color))
+                painter.setPen(QtCore.Qt.NoPen) 
+                painter.drawPolygon(QtGui.QPolygonF(inner_points))
 
     def paintEvent(self, event):
         if not self.master_enabled:
