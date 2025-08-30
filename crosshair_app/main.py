@@ -279,9 +279,17 @@ class CrosshairOverlay(QtWidgets.QWidget):
                         )
 
                     # 本体の描画
-                    pen = QtGui.QPen(color, self.crosshair_thickness, QtCore.Qt.SolidLine, QtCore.Qt.FlatCap)
+                    if self.crosshair_thickness == 0:
+                        pen = QtCore.Qt.NoPen
+                    else:
+                        pen = QtGui.QPen(color, self.crosshair_thickness, QtCore.Qt.SolidLine, QtCore.Qt.FlatCap)
+                    
                     painter.setPen(pen)
                     painter.setBrush(QtCore.Qt.NoBrush) # 本体の描画は塗りつぶしなし
+
+                    # 1pxの線の場合、アンチエイリアシングを一時的に無効にする
+                    if self.crosshair_thickness == 1:
+                        painter.setRenderHint(QtGui.QPainter.Antialiasing, False)
 
                     # 縦線 (上)
                     painter.drawLine(self.center_x, self.center_y - self.crosshair_gap - self.crosshair_vline_length,
@@ -295,6 +303,10 @@ class CrosshairOverlay(QtWidgets.QWidget):
                     # 横線 (右)
                     painter.drawLine(self.center_x + self.crosshair_gap, self.center_y,
                                      self.center_x + self.crosshair_gap + self.crosshair_hline_length, self.center_y)
+                    
+                    # アンチエイリアシングを元に戻す
+                    if self.crosshair_thickness == 1:
+                        painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
 
                 elif self.crosshair_shape == "円":
                     # 直径は線の内側から測定されるため、描画上の中心半径を計算
