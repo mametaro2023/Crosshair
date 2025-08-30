@@ -258,3 +258,95 @@ def extract_and_find_exe(zip_path):
     except Exception as e:
         print(f"ZIP展開またはEXE検索エラー: {e}")
         return None
+
+def parse_valorant_crosshair_code(code):
+    settings = {}
+    tokens = code.split(';')
+
+    # Predefined colors for 'c' parameter
+    valorant_colors = {
+        '1': '#00FF00', # Green
+        '2': '#7FFF00', # Chartreuse
+        '3': '#DFFF00', # Lime
+        '4': '#FFFF00', # Yellow
+        '5': '#00FFFF', # Cyan
+        '6': '#FF00FF', # Magenta
+        '7': '#FF0000', # Red
+    }
+
+    param_map = {
+        'o': ('crosshair_outline_alpha', float),
+        't': ('crosshair_outline_width', int),
+        'd': ('dot_alpha', float),
+        'z': ('dot_radius', lambda x: int(float(x) / 2)), # Valorant 'z' is diameter, our 'dot_radius' is radius
+        'a': ('crosshair_alpha', float),
+        '0l': ('crosshair_hline_length', int),
+        '0v': ('crosshair_vline_length', int),
+        '0o': ('crosshair_gap', int), # Corrected from '0g' to '0o'
+        '0t': ('crosshair_thickness', int),
+    }
+
+    # Find the starting point of actual parameters
+    start_index = 0
+    if 'P' in tokens:
+        try:
+            p_index = tokens.index('P')
+            start_index = p_index + 1 # Parameters start after 'P'
+        except ValueError:
+            pass # 'P' not found, start from beginning
+
+    # Initialize crosshair color to default white
+    settings['crosshair_color'] = '#FFFFFF'
+    
+    # Iterate through tokens in pairs (key, value)
+    i = start_index
+    while i < len(tokens) - 1:
+        key = tokens[i]
+        value_str = tokens[i+1]
+
+        if key == 'c':
+            try:
+                color_code = value_str
+                if color_code in valorant_colors:
+                    settings['crosshair_color'] = valorant_colors[color_code]
+                elif color_code == '8':
+                    # Custom color, next token should be 'u' and its value
+                    if i + 2 < len(tokens) and tokens[i+2] == 'u':
+                        custom_hex = tokens[i+3]
+                        
+                        # If the hex code is longer than 6 characters, assume the extra characters are alpha
+                        # and take only the first 6 characters for the color part (RRGGBB).
+                        # This handles cases like B045B0F (7 chars) or FFC7FFFF (8 chars)
+                        if len(custom_hex) > 6:
+                            custom_hex_color_part = custom_hex[:6]
+                        else:
+                            custom_hex_color_part = custom_hex # Use as is if 6 or fewer characters
+
+                        # Ensure it's a valid hex color (RRGGBB format)
+                        if len(custom_hex_color_part) == 6 and all(c in '0123456789abcdefABCDEF' for c in custom_hex_color_part.lower()):
+                            settings['crosshair_color'] = '#' + custom_hex_color_part
+                        i += 2 # Skip 'u' and its value
+                # Move to next pair
+                i += 2
+                continue
+            except (ValueError, IndexError):
+                # Malformed color code, ignore and move on
+                i += 2
+                continue
+        
+        if key in param_map:
+            internal_key, convert_func = param_map[key]
+            try:
+                settings[internal_key] = convert_func(value_str)
+            except ValueError:
+                # Ignore invalid values
+                pass
+        
+        # Move to next pair
+        i += 2
+
+    # Handle 0v default to 0l if 0v is not present
+    if 'crosshair_hline_length' in settings and 'crosshair_vline_length' not in settings:
+        settings['crosshair_vline_length'] = settings['crosshair_hline_length']
+
+    return settings

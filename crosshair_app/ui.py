@@ -168,6 +168,8 @@ class ControlPanel(QtWidgets.QWidget):
     update_circle_outline_alpha = handlers.update_circle_outline_alpha
     update_chevron_outline_alpha = handlers.update_chevron_outline_alpha
 
+    import_valorant_crosshair = handlers.import_valorant_crosshair
+
     # --- Remaining Logic Specific to ControlPanel ---
     def closeEvent(self, event):
         if self.overlay.is_dirty:

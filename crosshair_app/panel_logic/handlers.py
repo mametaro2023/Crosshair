@@ -204,3 +204,44 @@ def update_chevron_outline_alpha(self, val):
     self.overlay.chevron_outline_alpha = round(val / 100, 2)
     self.chevron_outline_alpha_label.setText(f"{val}%")
     self.schedule_overlay_update()
+
+def import_valorant_crosshair(self):
+    code, ok = QtWidgets.QInputDialog.getText(self, "Valorantクロスヘアをインポート", "Valorantクロスヘアコードを入力してください:")
+    if ok and code:
+        try:
+            parsed_settings = utils.parse_valorant_crosshair_code(code)
+
+            # Apply settings to overlay
+            self.overlay.crosshair_shape = "十字"
+            self.shape_box.setCurrentText("十字") # Update UI
+
+            # Apply parsed settings
+            settings_to_apply = {
+                "crosshair_outline_alpha": "crosshair_outline_alpha",
+                "crosshair_outline_width": "crosshair_outline_width",
+                "dot_alpha": "dot_alpha",
+                "dot_radius": "dot_radius",
+                "crosshair_alpha": "crosshair_alpha",
+                "crosshair_hline_length": "crosshair_hline_length",
+                "crosshair_vline_length": "crosshair_vline_length",
+                "crosshair_gap": "crosshair_gap",
+                "crosshair_thickness": "crosshair_thickness",
+                "crosshair_color": "crosshair_color", # Add crosshair_color
+            }
+
+            for parsed_key, overlay_attr in settings_to_apply.items():
+                if parsed_key in parsed_settings:
+                    setattr(self.overlay, overlay_attr, parsed_settings[parsed_key])
+
+            # Special handling for crosshair_color as it also updates a UI element directly
+            if "crosshair_color" in parsed_settings:
+                self.ch_color_square.update_color(parsed_settings["crosshair_color"])
+
+
+            self.schedule_overlay_update()
+            self.update_control_panel_ui() # Update all UI elements
+
+            QtWidgets.QMessageBox.information(self, "インポート成功", "Valorantクロスヘア設定をインポートしました。" )
+
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "インポート失敗", f"Valorantクロスヘアコードの解析に失敗しました:\n{e}")
