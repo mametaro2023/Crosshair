@@ -215,7 +215,7 @@ def update_chevron_outline_alpha(self, val):
     self.schedule_overlay_update()
 
 def import_valorant_crosshair(self):
-    code, ok = QtWidgets.QInputDialog.getText(self, "Valorantクロスヘアをインポート", "Valorantクロスヘアコードを入力してください:")
+    code, ok = QtWidgets.QInputDialog.getText(self, "Valorantクロスヘアをインポート(ベータ版)", "Valorantクロスヘアコードを入力してください:")
     if ok and code:
         try:
             parsed_settings = utils.parse_valorant_crosshair_code(code)

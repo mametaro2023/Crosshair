@@ -50,7 +50,7 @@ def create_tab(panel):
     general_layout.addLayout(drawing_order_layout)
 
     # Valorant Crosshair Import
-    valorant_import_button = QtWidgets.QPushButton("Valorantクロスヘアをインポート")
+    valorant_import_button = QtWidgets.QPushButton("Valorantクロスヘアをインポート（ベータ版）")
     valorant_import_button.clicked.connect(panel.import_valorant_crosshair)
     general_layout.addWidget(valorant_import_button)
 
