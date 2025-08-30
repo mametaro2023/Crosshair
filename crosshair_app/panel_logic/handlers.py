@@ -230,8 +230,11 @@ def import_valorant_crosshair(self):
 
             # Apply parsed settings
             settings_to_apply = {
+                "crosshair_visible": "crosshair_visible", # Add this line
+                "crosshair_outline_enabled": "crosshair_outline_enabled",
                 "crosshair_outline_alpha": "crosshair_outline_alpha",
                 "crosshair_outline_width": "crosshair_outline_width",
+                "crosshair_inner_alpha": "crosshair_inner_alpha", # Add this line
                 "dot_alpha": "dot_alpha", # Now correctly mapped from 'a' in utils.py
                 "dot_radius": "dot_radius", # Mapped from 'z' in utils.py
                 "crosshair_alpha": "crosshair_alpha",

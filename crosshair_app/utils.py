@@ -298,6 +298,12 @@ def parse_valorant_crosshair_code(code):
     # Initialize crosshair color to default white
     settings['crosshair_color'] = '#FFFFFF'
     
+    # Initialize outline enabled to True by default (Valorant behavior)
+    settings['crosshair_outline_enabled'] = True 
+
+    # Initialize crosshair visible to True by default
+    settings['crosshair_visible'] = True
+
     # Iterate through tokens in pairs (key, value)
     i = start_index
     while i < len(tokens) - 1:
@@ -334,6 +340,24 @@ def parse_valorant_crosshair_code(code):
                 i += 2
                 continue
         
+        # Handle 'h' parameter explicitly
+        if key == 'h':
+            if value_str == '0':
+                settings['crosshair_outline_enabled'] = False
+            # No 'else' needed here, as it's already defaulted to True
+            # and any other value for 'h' (like '1') would keep it True.
+            i += 2
+            continue
+
+        # Handle '0b' parameter explicitly for crosshair visibility
+        if key == '0b':
+            if value_str == '0':
+                settings['crosshair_visible'] = False
+            # No 'else' needed here, as it's already defaulted to True
+            # and any other value for '0b' would keep it True.
+            i += 2
+            continue
+
         if key in param_map:
             internal_key, convert_func = param_map[key]
             try:
@@ -363,15 +387,9 @@ def parse_valorant_crosshair_code(code):
     if 'crosshair_thickness' not in settings:
         settings['crosshair_thickness'] = 2
 
-    # Handle crosshair outline visibility 'h'
-    settings['crosshair_outline_enabled'] = True # Default to visible
-    if 'h' in tokens:
-        try:
-            h_index = tokens.index('h')
-            if h_index + 1 < len(tokens) and tokens[h_index + 1] == '0':
-                settings['crosshair_outline_enabled'] = False
-        except ValueError:
-            pass # 'h' not found as a key, already defaulted to True
+    # Handle 't' (crosshair_outline_width) default to 1 if not present
+    if 'crosshair_outline_width' not in settings:
+        settings['crosshair_outline_width'] = 1
 
     # Set crosshair_alpha to 1.0 if no advanced crosshair parameters are present
     advanced_crosshair_params = ['crosshair_hline_length', 'crosshair_vline_length', 'crosshair_gap', 'crosshair_thickness']
