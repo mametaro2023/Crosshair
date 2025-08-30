@@ -83,6 +83,13 @@ class CrosshairOverlayBase(QtWidgets.QWidget):
             "circle_outline_width": 1,
             "circle_thickness": 2,
             "circle_diameter": 50,
+            # 矢印 (シェブロン) アドバンスド設定
+            "chevron_outline_enabled": True,
+            "chevron_outline_width": 1,
+            "chevron_thickness": 2,
+            "chevron_length": 10,
+            # 画像系クロスヘアのリサイズ設定
+            "image_crosshair_size": 40,
         }
         self.drawing_order = loaded_config.get("drawing_order", "dot_on_top")
         self.last_selected_preset = loaded_config.get("last_selected", "デフォルト設定")
@@ -159,6 +166,15 @@ class CrosshairOverlayBase(QtWidgets.QWidget):
         self.circle_thickness = config_data.get("circle_thickness", 2)
         self.circle_diameter = config_data.get("circle_diameter", 50)
 
+        # 矢印 (シェブロン) アドバンスド設定
+        self.chevron_outline_enabled = config_data.get("chevron_outline_enabled", True)
+        self.chevron_outline_width = config_data.get("chevron_outline_width", 1)
+        self.chevron_thickness = config_data.get("chevron_thickness", 2)
+        self.chevron_length = config_data.get("chevron_length", 10)
+
+        # 画像系クロスヘアのリサイズ設定
+        self.image_crosshair_size = config_data.get("image_crosshair_size", 40)
+
         self.update()
 
     def get_config(self):
@@ -188,6 +204,13 @@ class CrosshairOverlayBase(QtWidgets.QWidget):
             "circle_outline_width": self.circle_outline_width,
             "circle_thickness": self.circle_thickness,
             "circle_diameter": self.circle_diameter,
+            # 矢印 (シェブロン) アドバンスド設定
+            "chevron_outline_enabled": self.chevron_outline_enabled,
+            "chevron_outline_width": self.chevron_outline_width,
+            "chevron_thickness": self.chevron_thickness,
+            "chevron_length": self.chevron_length,
+            # 画像系クロスヘアのリサイズ設定
+            "image_crosshair_size": self.image_crosshair_size,
         }
 
     def save_monitor_selection(self, index):

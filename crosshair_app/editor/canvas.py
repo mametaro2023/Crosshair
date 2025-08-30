@@ -109,9 +109,9 @@ class Canvas(QtWidgets.QWidget):
             painter.setPen(QtGui.QPen(QtCore.Qt.black, 1)) # 黒いペン、太さ1
             
             # ブラシの左上ピクセル座標を計算
-            # _set_pixel_with_brush は中心から描画するので、プレビューも中心を合わせる
-            top_left_x = self.hover_pos.x() - (self.brush_size // 2)
-            top_left_y = self.hover_pos.y() - (self.brush_size // 2)
+            # _set_pixel_with_brush と同じ計算を使用
+            top_left_x = self.hover_pos.x() - (self.brush_size - 1) // 2
+            top_left_y = self.hover_pos.y() - (self.brush_size - 1) // 2
             
             # 描画
             painter.drawRect(QtCore.QRectF(top_left_x * cell_size, top_left_y * cell_size,
@@ -232,9 +232,12 @@ class Canvas(QtWidgets.QWidget):
 
     def _set_pixel_with_brush(self, x, y, color):
         """指定された座標を中心にブラシサイズでピクセルをセットする"""
-        half_brush = self.brush_size // 2
-        for py in range(y - half_brush, y + half_brush + 1):
-            for px in range(x - half_brush, x + half_brush + 1):
+        # ブラシの開始座標を計算
+        start_px = x - (self.brush_size - 1) // 2
+        start_py = y - (self.brush_size - 1) // 2
+
+        for py in range(start_py, start_py + self.brush_size):
+            for px in range(start_px, start_px + self.brush_size):
                 if 0 <= px < self.GRID_SIZE and 0 <= py < self.GRID_SIZE:
                     self.grid_data[py][px] = color
 

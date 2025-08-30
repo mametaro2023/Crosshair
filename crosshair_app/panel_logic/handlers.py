@@ -165,3 +165,27 @@ def enable_all_keys_gui(self):
     self.overlay.enable_all_keys()
     self.disabled_keys_label.setText("なし")
     self.schedule_overlay_update()
+
+def update_chevron_outline_enabled(self, checked):
+    self.overlay.chevron_outline_enabled = checked
+    self.schedule_overlay_update()
+
+def update_chevron_outline_width(self, val):
+    self.overlay.chevron_outline_width = val
+    self.chevron_outline_width_label.setText(f"{val}px")
+    self.schedule_overlay_update()
+
+def update_chevron_thickness(self, val):
+    self.overlay.chevron_thickness = val
+    self.chevron_thickness_label.setText(f"{val}px")
+    self.schedule_overlay_update()
+
+def update_chevron_length(self, val):
+    self.overlay.chevron_length = val
+    self.chevron_length_label.setText(f"{val}px")
+    self.schedule_overlay_update()
+
+def update_image_crosshair_size(self, val):
+    self.overlay.image_crosshair_size = val
+    self.image_crosshair_size_label.setText(f"{val}px")
+    self.schedule_overlay_update()

@@ -13,6 +13,27 @@ class EditorDialog(QtWidgets.QDialog):
 
         self.saved_path = None
 
+        # Set stylesheet for tool buttons
+        self.setStyleSheet("""
+            QPushButton[objectName="toolButton"] {
+                background-color: #333333;
+                color: #cccccc;
+                border: 1px solid #555555;
+                border-radius: 4px;
+                padding: 5px;
+            }
+            QPushButton[objectName="toolButton"]:hover {
+                background-color: #444444;
+            }
+            QPushButton[objectName="toolButton_selected"] {
+                background-color: #0078d7; /* Accent color */
+                color: white;
+                border: 1px solid #0078d7;
+                border-radius: 4px;
+                padding: 5px;
+            }
+        """)
+
         # Layouts
         self.main_layout = QtWidgets.QHBoxLayout(self)
         left_panel_layout = QtWidgets.QVBoxLayout()
@@ -39,6 +60,9 @@ class EditorDialog(QtWidgets.QDialog):
         # ホットキーの登録
         self.register_hotkeys()
 
+        # 初期表示の更新
+        self._update_current_color_display()
+
     def register_hotkeys(self):
         # Ctrl+Z で元に戻す
         keyboard.add_hotkey('ctrl+z', self.canvas.undo, suppress=False)
@@ -61,18 +85,22 @@ class EditorDialog(QtWidgets.QDialog):
         pen_button.setCheckable(True)
         pen_button.setChecked(True)
         pen_button.clicked.connect(lambda: self.canvas.set_tool('pencil'))
+        pen_button.setObjectName("toolButton_selected") # Initial selected state
 
         eraser_button = QtWidgets.QPushButton("消しゴム")
         eraser_button.setCheckable(True)
         eraser_button.clicked.connect(lambda: self.canvas.set_tool('eraser'))
+        eraser_button.setObjectName("toolButton")
 
         line_button = QtWidgets.QPushButton("直線")
         line_button.setCheckable(True)
         line_button.clicked.connect(lambda: self.canvas.set_tool('line'))
+        line_button.setObjectName("toolButton")
 
         circle_button = QtWidgets.QPushButton("円")
         circle_button.setCheckable(True)
         circle_button.clicked.connect(lambda: self.canvas.set_tool('circle'))
+        circle_button.setObjectName("toolButton")
 
         # Exclusive buttons
         button_group = QtWidgets.QButtonGroup(self)
@@ -86,7 +114,20 @@ class EditorDialog(QtWidgets.QDialog):
         tools_layout.addWidget(eraser_button)
         tools_layout.addWidget(line_button)
         tools_layout.addWidget(circle_button)
+
+        # Connect button group to update tool display
+        button_group.buttonClicked.connect(self._update_current_tool_display)
+
         parent_layout.addWidget(tools_group)
+
+    def _update_current_tool_display(self, clicked_button):
+        for button in clicked_button.group().buttons():
+            if button is clicked_button:
+                button.setObjectName("toolButton_selected")
+            else:
+                button.setObjectName("toolButton")
+            button.style().unpolish(button)
+            button.style().polish(button)
 
     def _create_palette_group(self, parent_layout):
         brush_size_group = QtWidgets.QGroupBox("ブラシサイズ")
@@ -97,6 +138,19 @@ class EditorDialog(QtWidgets.QDialog):
         self.brush_size_spinbox.valueChanged.connect(self.canvas.set_brush_size)
         brush_size_layout.addWidget(self.brush_size_spinbox)
         parent_layout.addWidget(brush_size_group)
+
+        # 現在の色の表示
+        self.current_color_display = QtWidgets.QLabel()
+        self.current_color_display.setFixedSize(48, 24) # 小さな四角で色を表示
+        self.current_color_display.setStyleSheet("border: 1px solid #808080; background-color: black;") # 初期色
+        self.current_color_display.setAlignment(QtCore.Qt.AlignCenter)
+        self.current_color_display.setText("色") # Placeholder text
+        
+        color_display_layout = QtWidgets.QHBoxLayout()
+        color_display_layout.addWidget(QtWidgets.QLabel("現在の色:"))
+        color_display_layout.addWidget(self.current_color_display)
+        color_display_layout.addStretch()
+        parent_layout.addLayout(color_display_layout)
 
         palette_group = QtWidgets.QGroupBox("カラーパレット")
         palette_layout = QtWidgets.QGridLayout(palette_group)
@@ -114,13 +168,47 @@ class EditorDialog(QtWidgets.QDialog):
             button.clicked.connect(self._make_color_button_handler(QtGui.QColor(color_hex)))
             palette_layout.addWidget(button, i // 5, i % 5)
         
+        # カスタム色選択ボタン
+        custom_color_button = QtWidgets.QPushButton("カスタム色を選択...")
+        custom_color_button.clicked.connect(self._pick_custom_color)
+        palette_layout.addWidget(custom_color_button, len(colors) // 5, 0, 1, 5) # 新しい行に5列スパンで配置
+
         parent_layout.addWidget(palette_group)
 
     def _make_color_button_handler(self, color):
         """Create a closure to capture the color for the button handler."""
         def handler():
             self.canvas.set_pen_color(color)
+            self._update_current_color_display()
         return handler
+
+    def _pick_custom_color(self):
+        current_color = self.canvas.pen_color
+        color = QtWidgets.QColorDialog.getColor(current_color, self, "色を選択")
+        if color.isValid():
+            self.canvas.set_pen_color(color)
+            self._update_current_color_display()
+
+    def _update_current_color_display(self):
+        color_hex = self.canvas.pen_color.name()
+        self.current_color_display.setStyleSheet(f"border: 1px solid #808080; background-color: {color_hex};")
+        self.current_color_display.setText(color_hex.upper())
+        # テキストの色を背景色に応じて調整
+        qcolor = QtGui.QColor(color_hex)
+        # 知覚される輝度を計算 (ITU-R BT.709)
+        luminance = (0.2126 * qcolor.red() + 0.7152 * qcolor.green() + 0.0722 * qcolor.blue()) / 255
+        text_color = '#000000' if luminance > 0.5 else '#ffffff' # 0.5は一般的なしきい値
+
+        # 完全なスタイルシート文字列を構築
+        stylesheet = f"""
+            QLabel {{
+                border: 1px solid #808080;
+                background-color: {color_hex};
+                color: {text_color};
+                font-weight: bold;
+            }}
+        """
+        self.current_color_display.setStyleSheet(stylesheet)
 
     def save(self):
         pixel_data = self.canvas.get_pixel_data()

@@ -21,6 +21,11 @@ def update_control_panel_ui(self):
     self.circle_outline_width_slider.blockSignals(True)
     self.circle_thickness_slider.blockSignals(True)
     self.circle_diameter_slider.blockSignals(True)
+    self.chevron_outline_btn.blockSignals(True)
+    self.chevron_outline_width_slider.blockSignals(True)
+    self.chevron_thickness_slider.blockSignals(True)
+    self.chevron_length_slider.blockSignals(True)
+    self.image_crosshair_size_slider.blockSignals(True)
 
     # --- Update General and Non-Shape-Specific UI ---
     self.monitor_selection_box.setCurrentIndex(self.overlay.selected_monitor_index)
@@ -37,20 +42,23 @@ def update_control_panel_ui(self):
     # --- Update Shape-Specific UI ---
     is_cross_shape = shape == "十字"
     is_circle_shape = shape == "円"
+    is_chevron_shape = shape == "矢印 (シェブロン)"
     is_image_based = shape in ["MAME", "カスタム画像"]
     is_crshr_shape = hasattr(self, 'custom_crshr_shapes') and shape in self.custom_crshr_shapes
-    is_advanced_shape = is_cross_shape or is_circle_shape
+    is_image_crosshair_shape = is_image_based or is_crshr_shape
+    is_advanced_shape = is_cross_shape or is_circle_shape or is_chevron_shape or is_image_crosshair_shape
 
     # Visibility of advanced settings sections
     self.cross_settings_widget.setVisible(is_cross_shape)
     self.circle_settings_widget.setVisible(is_circle_shape)
+    self.chevron_settings_widget.setVisible(is_chevron_shape)
+    self.image_settings_widget.setVisible(is_image_crosshair_shape)
 
     # Visibility of the main advanced settings toggle button
     if hasattr(self, 'advanced_settings_toggle_btn'):
         self.advanced_settings_toggle_btn.setVisible(is_advanced_shape)
         # If the shape changes, collapse the advanced view
-        if self.shape_box.property("previous_shape") != shape:
-                self.advanced_settings_toggle_btn.setChecked(False)
+        
         self.shape_box.setProperty("previous_shape", shape)
 
     # Visibility of other shape-related UI
@@ -101,6 +109,21 @@ def update_control_panel_ui(self):
         self.circle_thickness_label.setText(f"{self.overlay.circle_thickness}px")
         self.circle_diameter_label.setText(f"{self.overlay.circle_diameter}px")
 
+    # Chevron advanced settings
+    if is_chevron_shape:
+        self.chevron_outline_btn.setChecked(self.overlay.chevron_outline_enabled)
+        self.chevron_outline_width_slider.setValue(self.overlay.chevron_outline_width)
+        self.chevron_thickness_slider.setValue(self.overlay.chevron_thickness)
+        self.chevron_length_slider.setValue(self.overlay.chevron_length)
+        self.chevron_outline_width_label.setText(f"{self.overlay.chevron_outline_width}px")
+        self.chevron_thickness_label.setText(f"{self.overlay.chevron_thickness}px")
+        self.chevron_length_label.setText(f"{self.overlay.chevron_length}px")
+
+    # Image crosshair settings
+    if is_image_crosshair_shape:
+        self.image_crosshair_size_slider.setValue(self.overlay.image_crosshair_size)
+        self.image_crosshair_size_label.setText(f"{self.overlay.image_crosshair_size}px")
+
     # Keys settings
     self.disabled_keys_label.setText(", ".join(self.overlay.disabled_keys) if self.overlay.disabled_keys else "なし")
 
@@ -123,6 +146,11 @@ def update_control_panel_ui(self):
     self.circle_outline_width_slider.blockSignals(False)
     self.circle_thickness_slider.blockSignals(False)
     self.circle_diameter_slider.blockSignals(False)
+    self.chevron_outline_btn.blockSignals(False)
+    self.chevron_outline_width_slider.blockSignals(False)
+    self.chevron_thickness_slider.blockSignals(False)
+    self.chevron_length_slider.blockSignals(False)
+    self.image_crosshair_size_slider.blockSignals(False)
 
     self._initial_load_complete = True
 

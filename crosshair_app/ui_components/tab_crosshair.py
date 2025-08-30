@@ -123,6 +123,62 @@ def create_tab(panel):
 
     advanced_container_layout.addWidget(panel.circle_settings_widget)
 
+    # --- 矢印 (シェブロン) アドバンスド設定ウィジェット ---
+    panel.chevron_settings_widget = QtWidgets.QWidget()
+    chevron_advanced_layout = QtWidgets.QFormLayout(panel.chevron_settings_widget)
+    chevron_advanced_layout.setContentsMargins(0, 0, 0, 0)
+    chevron_advanced_layout.setSpacing(10)
+
+    panel.chevron_outline_btn = QtWidgets.QCheckBox("輪郭")
+    panel.chevron_outline_btn.toggled.connect(panel.update_chevron_outline_enabled)
+    chevron_advanced_layout.addRow(panel.chevron_outline_btn)
+
+    panel.chevron_outline_width_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+    panel.chevron_outline_width_slider.setRange(1, 6)
+    panel.chevron_outline_width_slider.valueChanged.connect(panel.update_chevron_outline_width)
+    panel.chevron_outline_width_label = QtWidgets.QLabel()
+    chevron_outline_width_layout = QtWidgets.QHBoxLayout()
+    chevron_outline_width_layout.addWidget(panel.chevron_outline_width_slider)
+    chevron_outline_width_layout.addWidget(panel.chevron_outline_width_label)
+    chevron_advanced_layout.addRow("輪郭の太さ:", chevron_outline_width_layout)
+
+    panel.chevron_thickness_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+    panel.chevron_thickness_slider.setRange(0, 20)
+    panel.chevron_thickness_slider.valueChanged.connect(panel.update_chevron_thickness)
+    panel.chevron_thickness_label = QtWidgets.QLabel()
+    chevron_thickness_layout = QtWidgets.QHBoxLayout()
+    chevron_thickness_layout.addWidget(panel.chevron_thickness_slider)
+    chevron_thickness_layout.addWidget(panel.chevron_thickness_label)
+    chevron_advanced_layout.addRow("線の太さ:", chevron_thickness_layout)
+
+    panel.chevron_length_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+    panel.chevron_length_slider.setRange(1, 40)
+    panel.chevron_length_slider.valueChanged.connect(panel.update_chevron_length)
+    panel.chevron_length_label = QtWidgets.QLabel()
+    chevron_length_layout = QtWidgets.QHBoxLayout()
+    chevron_length_layout.addWidget(panel.chevron_length_slider)
+    chevron_length_layout.addWidget(panel.chevron_length_label)
+    chevron_advanced_layout.addRow("線の長さ:", chevron_length_layout)
+
+    advanced_container_layout.addWidget(panel.chevron_settings_widget)
+
+    # --- 画像系アドバンスド設定ウィジェット ---
+    panel.image_settings_widget = QtWidgets.QWidget()
+    image_advanced_layout = QtWidgets.QFormLayout(panel.image_settings_widget)
+    image_advanced_layout.setContentsMargins(0, 0, 0, 0)
+    image_advanced_layout.setSpacing(10)
+
+    panel.image_crosshair_size_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+    panel.image_crosshair_size_slider.setRange(0, 100)
+    panel.image_crosshair_size_slider.valueChanged.connect(panel.update_image_crosshair_size)
+    panel.image_crosshair_size_label = QtWidgets.QLabel()
+    image_crosshair_size_layout = QtWidgets.QHBoxLayout()
+    image_crosshair_size_layout.addWidget(panel.image_crosshair_size_slider)
+    image_crosshair_size_layout.addWidget(panel.image_crosshair_size_label)
+    image_advanced_layout.addRow("リサイズ:", image_crosshair_size_layout)
+
+    advanced_container_layout.addWidget(panel.image_settings_widget)
+
     # --- 折りたたみ可能なアドバンスド設定のセットアップ ---
     collapsible_advanced_layout = QtWidgets.QVBoxLayout()
     collapsible_advanced_layout.setContentsMargins(0, 0, 0, 0)

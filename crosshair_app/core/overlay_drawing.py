@@ -10,19 +10,36 @@ class OverlayDrawingMixin:
                 data = json.load(f)
             
             pixels = data.get("pixels", [])
-            # キャンバスサイズ(40x40)に基づいて中央からのオフセットを計算
-            offset_x = self.center_x - (data.get("size", [40, 40])[0] // 2)
-            offset_y = self.center_y - (data.get("size", [40, 40])[1] // 2)
+            original_size = data.get("size", [40, 40]) # Get original size from .crshr file
 
-            painter.setOpacity(self.crosshair_alpha)
+            # Create a QImage from pixel data
+            image = QtGui.QImage(original_size[0], original_size[1], QtGui.QImage.Format_ARGB32)
+            image.fill(QtCore.Qt.transparent) # Fill with transparent background
 
             for pixel in pixels:
                 pos = pixel.get("pos")
                 color_str = pixel.get("color")
                 if pos and color_str:
                     color = QtGui.QColor(color_str)
-                    painter.setPen(color)
-                    painter.drawPoint(offset_x + pos[0], offset_y + pos[1])
+                    # Ensure pixel is within bounds
+                    if 0 <= pos[0] < original_size[0] and 0 <= pos[1] < original_size[1]:
+                        image.setPixelColor(pos[0], pos[1], color)
+            
+            pixmap = QtGui.QPixmap.fromImage(image)
+            
+            if not pixmap.isNull():
+                # Scale the pixmap to the desired size
+                scaled_pixmap = pixmap.scaled(self.image_crosshair_size, self.image_crosshair_size, 
+                                              QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+                
+                # Calculate target rectangle to center the scaled pixmap
+                target_rect = QtCore.QRect(self.center_x - scaled_pixmap.width() // 2, 
+                                           self.center_y - scaled_pixmap.height() // 2, 
+                                           scaled_pixmap.width(), scaled_pixmap.height())
+                
+                painter.setOpacity(self.crosshair_alpha) # Apply overall crosshair alpha
+                painter.drawPixmap(target_rect, scaled_pixmap)
+
         except Exception as e:
             print(f"カスタムクロスヘアの描画に失敗: {path}, {e}")
 
@@ -43,8 +60,8 @@ class OverlayDrawingMixin:
             if image_path and os.path.exists(image_path):
                 pixmap = QtGui.QPixmap(image_path)
                 if not pixmap.isNull():
-                    target_size = self.size * 2
-                    target_rect = QtCore.QRect(self.center_x - self.size, self.center_y - self.size, target_size, target_size)
+                    target_size = self.image_crosshair_size
+                    target_rect = QtCore.QRect(self.center_x - target_size // 2, self.center_y - target_size // 2, target_size, target_size)
                     painter.drawPixmap(target_rect, pixmap)
             else:
                 color = QtGui.QColor(self.crosshair_color)
@@ -148,15 +165,49 @@ class OverlayDrawingMixin:
                         painter.setBrush(QtCore.Qt.NoBrush)
                         painter.drawEllipse(rect)
                 elif self.crosshair_shape == "矢印 (シェブロン)":
-                    pen = QtGui.QPen(color, 2)
+                    # 線の太さ
+                    if self.chevron_thickness == 0:
+                        pen = QtCore.Qt.NoPen
+                    else:
+                        pen = QtGui.QPen(color, self.chevron_thickness, QtCore.Qt.SolidLine, QtCore.Qt.RoundCap)
+                    
+                    # 輪郭の描画
+                    if self.chevron_outline_enabled and self.chevron_outline_width > 0:
+                        outline_pen_width = self.chevron_thickness + self.chevron_outline_width * 2
+                        outline_pen = QtGui.QPen(QtCore.Qt.black, outline_pen_width, QtCore.Qt.SolidLine, QtCore.Qt.RoundCap)
+                        painter.setPen(outline_pen)
+                        # アンチエイリアシングを一時的に無効にする (1pxの場合)
+                        if outline_pen_width == 1:
+                            painter.setRenderHint(QtGui.QPainter.Antialiasing, False)
+                        
+                        # シェブロンのポイントを計算
+                        points = [
+                            QtCore.QPoint(self.center_x - self.chevron_length, self.center_y + self.chevron_length),
+                            QtCore.QPoint(self.center_x, self.center_y),
+                            QtCore.QPoint(self.center_x + self.chevron_length, self.center_y + self.chevron_length)
+                        ]
+                        painter.drawPolyline(QtGui.QPolygon(points))
+                        
+                        # アンチエイリアシングを元に戻す
+                        if outline_pen_width == 1:
+                            painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+
                     painter.setPen(pen)
-                    arrow_size = self.size // 2
+                    # アンチエイリアシングを一時的に無効にする (1pxの場合)
+                    if self.chevron_thickness == 1:
+                        painter.setRenderHint(QtGui.QPainter.Antialiasing, False)
+
+                    # シェブロンのポイントを計算
                     points = [
-                        QtCore.QPoint(self.center_x - arrow_size, self.center_y + arrow_size),
+                        QtCore.QPoint(self.center_x - self.chevron_length, self.center_y + self.chevron_length),
                         QtCore.QPoint(self.center_x, self.center_y),
-                        QtCore.QPoint(self.center_x + arrow_size, self.center_y + arrow_size)
+                        QtCore.QPoint(self.center_x + self.chevron_length, self.center_y + self.chevron_length)
                     ]
                     painter.drawPolyline(QtGui.QPolygon(points))
+
+                    # アンチエイリアシングを元に戻す
+                    if self.chevron_thickness == 1:
+                        painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
 
     def _draw_dot(self, painter):
         dot_alpha = self.dot_alpha

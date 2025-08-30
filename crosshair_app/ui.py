@@ -157,6 +157,13 @@ class ControlPanel(QtWidgets.QWidget):
     enable_key_gui = handlers.enable_key_gui
     enable_all_keys_gui = handlers.enable_all_keys_gui
 
+    update_chevron_outline_enabled = handlers.update_chevron_outline_enabled
+    update_chevron_outline_width = handlers.update_chevron_outline_width
+    update_chevron_thickness = handlers.update_chevron_thickness
+    update_chevron_length = handlers.update_chevron_length
+
+    update_image_crosshair_size = handlers.update_image_crosshair_size
+
     # --- Remaining Logic Specific to ControlPanel ---
     def closeEvent(self, event):
         if self.overlay.is_dirty:
