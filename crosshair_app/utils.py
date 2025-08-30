@@ -277,7 +277,7 @@ def parse_valorant_crosshair_code(code):
     param_map = {
         'o': ('crosshair_outline_alpha', float),
         't': ('crosshair_outline_width', int),
-        'd': ('dot_alpha', float),
+        'a': ('dot_alpha', float), # Add this line for dot transparency
         'z': ('dot_radius', lambda x: int(float(x) / 2)), # Valorant 'z' is diameter, our 'dot_radius' is radius
         '0a': ('crosshair_inner_alpha', float), # Changed from crosshair_alpha to crosshair_inner_alpha
         '0l': ('crosshair_hline_length', int),
@@ -345,9 +345,33 @@ def parse_valorant_crosshair_code(code):
         # Move to next pair
         i += 2
 
+    # Handle dot visibility 'd'
+    settings['dot_visible'] = False # Default to hidden
+    if 'd' in tokens:
+        try:
+            d_index = tokens.index('d')
+            if d_index + 1 < len(tokens) and tokens[d_index + 1] == '1':
+                settings['dot_visible'] = True
+        except ValueError:
+            pass # 'd' not found as a key, already defaulted to False
+
     # Handle 0v default to 0l if 0v is not present
     if 'crosshair_hline_length' in settings and 'crosshair_vline_length' not in settings:
         settings['crosshair_vline_length'] = settings['crosshair_hline_length']
+
+    # Handle 0t default to 2 if 0t is not present
+    if 'crosshair_thickness' not in settings:
+        settings['crosshair_thickness'] = 2
+
+    # Handle crosshair outline visibility 'h'
+    settings['crosshair_outline_enabled'] = True # Default to visible
+    if 'h' in tokens:
+        try:
+            h_index = tokens.index('h')
+            if h_index + 1 < len(tokens) and tokens[h_index + 1] == '0':
+                settings['crosshair_outline_enabled'] = False
+        except ValueError:
+            pass # 'h' not found as a key, already defaulted to True
 
     # Set crosshair_alpha to 1.0 if no advanced crosshair parameters are present
     advanced_crosshair_params = ['crosshair_hline_length', 'crosshair_vline_length', 'crosshair_gap', 'crosshair_thickness']

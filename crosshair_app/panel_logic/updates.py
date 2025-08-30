@@ -105,6 +105,8 @@ def update_control_panel_ui(self):
         self.gap_label.setText(f"{self.overlay.crosshair_gap}px")
         self.crosshair_outline_alpha_slider.setValue(int(self.overlay.crosshair_outline_alpha * 100))
         self.crosshair_outline_alpha_label.setText(f"{int(self.overlay.crosshair_outline_alpha * 100)}%")
+        self.crosshair_inner_alpha_slider.setValue(int(self.overlay.crosshair_inner_alpha * 100))
+        self.crosshair_inner_alpha_label.setText(f"{int(self.overlay.crosshair_inner_alpha * 100)}%")
 
     # Circle advanced settings
     if is_circle_shape:

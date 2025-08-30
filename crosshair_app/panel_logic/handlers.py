@@ -217,21 +217,30 @@ def import_valorant_crosshair(self):
             parsed_settings = utils.parse_valorant_crosshair_code(code)
 
             # Apply settings to overlay
+            # Dot shape to "正方形"
+            self.overlay.dot_shape = "正方形"
+            self.dot_shape_box.setCurrentText("正方形") # Update UI
+
+            # Crosshair shape to "十字"
             self.overlay.crosshair_shape = "十字"
             self.shape_box.setCurrentText("十字") # Update UI
+
+            # Dot outer color to black
+            self.overlay.dot_outer_color = "#000000"
 
             # Apply parsed settings
             settings_to_apply = {
                 "crosshair_outline_alpha": "crosshair_outline_alpha",
                 "crosshair_outline_width": "crosshair_outline_width",
-                "dot_alpha": "dot_alpha",
-                "dot_radius": "dot_radius",
+                "dot_alpha": "dot_alpha", # Now correctly mapped from 'a' in utils.py
+                "dot_radius": "dot_radius", # Mapped from 'z' in utils.py
                 "crosshair_alpha": "crosshair_alpha",
                 "crosshair_hline_length": "crosshair_hline_length",
                 "crosshair_vline_length": "crosshair_vline_length",
                 "crosshair_gap": "crosshair_gap",
                 "crosshair_thickness": "crosshair_thickness",
-                "crosshair_color": "crosshair_color", # Add crosshair_color
+                "crosshair_color": "crosshair_color",
+                "dot_visible": "dot_visible", # Mapped from 'd' in utils.py
             }
 
             for parsed_key, overlay_attr in settings_to_apply.items():
@@ -241,7 +250,9 @@ def import_valorant_crosshair(self):
             # Special handling for crosshair_color as it also updates a UI element directly
             if "crosshair_color" in parsed_settings:
                 self.ch_color_square.update_color(parsed_settings["crosshair_color"])
-
+                # Dot inner color to crosshair color
+                self.overlay.dot_inner_color = parsed_settings["crosshair_color"]
+                self.dot_in_color_square.update_color(parsed_settings["crosshair_color"]) # Update UI
 
             self.schedule_overlay_update()
             self.update_control_panel_ui() # Update all UI elements
