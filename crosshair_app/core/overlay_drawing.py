@@ -69,18 +69,15 @@ class OverlayDrawingMixin:
                 color.setAlphaF(ch_alpha) # Moved here
                 
                 if self.crosshair_shape == "十字":
-                    # Debugging: Print values
-                    print(f"Debug: hline_length={self.crosshair_hline_length}, vline_length={self.crosshair_vline_length}, gap={self.crosshair_gap}, thickness={self.crosshair_thickness}, outline_width={self.crosshair_outline_width}")
+                    half_thickness = self.crosshair_thickness / 2.0
 
-                    # 輪郭の描画
+                    # 輪郭の描画 (塗りつぶし)
                     if self.crosshair_outline_enabled and self.crosshair_outline_width > 0:
                         outline_color = QtGui.QColor(QtCore.Qt.black)
                         outline_color.setAlphaF(self.crosshair_outline_alpha)
                         painter.setPen(QtCore.Qt.NoPen) # 輪郭は塗りつぶしなのでペンは不要
                         painter.setBrush(QtGui.QBrush(outline_color)) # 輪郭の色で塗りつぶす
 
-                        half_thickness = self.crosshair_thickness / 2.0
-                        
                         # 縦線 (上) の輪郭
                         rect_v_top_outline = QtCore.QRectF(
                             self.center_x - (half_thickness + self.crosshair_outline_width),
@@ -116,49 +113,94 @@ class OverlayDrawingMixin:
                             self.crosshair_thickness + self.crosshair_outline_width * 2
                         )
                         painter.drawRect(rect_h_right_outline)
+
+                        # 輪郭の内側を透明で塗りつぶす (中空効果)
+                        painter.setCompositionMode(QtGui.QPainter.CompositionMode_Clear) # Set composition mode to clear
+                        painter.setBrush(QtGui.QBrush(QtCore.Qt.black)) # Draw black to clear (alpha will be 0)
+                        painter.setPen(QtCore.Qt.NoPen) # No pen for clearing
+
+                        # 縦線 (上) の透明な切り抜き
+                        rect_v_top_cutout = QtCore.QRectF(
+                            self.center_x - half_thickness,
+                            self.center_y - self.crosshair_gap - self.crosshair_vline_length,
+                            self.crosshair_thickness,
+                            self.crosshair_vline_length
+                        )
+                        painter.drawRect(rect_v_top_cutout)
+
+                        # 縦線 (下) の透明な切り抜き
+                        rect_v_bottom_cutout = QtCore.QRectF(
+                            self.center_x - half_thickness,
+                            self.center_y + self.crosshair_gap,
+                            self.crosshair_thickness,
+                            self.crosshair_vline_length
+                        )
+                        painter.drawRect(rect_v_bottom_cutout)
+
+                        # 横線 (左) の透明な切り抜き
+                        rect_h_left_cutout = QtCore.QRectF(
+                            self.center_x - self.crosshair_gap - self.crosshair_hline_length,
+                            self.center_y - half_thickness,
+                            self.crosshair_hline_length,
+                            self.crosshair_thickness
+                        )
+                        painter.drawRect(rect_h_left_cutout)
+
+                        # 横線 (右) の透明な切り抜き
+                        rect_h_right_cutout = QtCore.QRectF(
+                            self.center_x + self.crosshair_gap,
+                            self.center_y - half_thickness,
+                            self.crosshair_hline_length,
+                            self.crosshair_thickness
+                        )
+                        painter.drawRect(rect_h_right_cutout)
+                        
+                        painter.setCompositionMode(QtGui.QPainter.CompositionMode_SourceOver) # Reset composition mode
                         
                     # 本体の描画
                     # 内側の透明度を適用
                     inner_color = QtGui.QColor(self.crosshair_color)
-                    inner_color.setAlphaF(self.crosshair_inner_alpha)
+                    inner_color.setAlphaF(self.crosshair_inner_alpha) # Use crosshair_inner_alpha here
                     painter.setPen(QtCore.Qt.NoPen) # 本体は塗りつぶしなのでペンは不要
                     painter.setBrush(QtGui.QBrush(inner_color)) # 本体の色で塗りつぶす
 
-                    # 縦線 (上)
-                    rect_v_top_main = QtCore.QRectF(
-                        self.center_x - half_thickness,
-                        self.center_y - self.crosshair_gap - self.crosshair_vline_length,
-                        self.crosshair_thickness,
-                        self.crosshair_vline_length
-                    )
-                    painter.drawRect(rect_v_top_main)
+                    # Only draw main crosshair if inner alpha is not 0
+                    if self.crosshair_inner_alpha > 0.0:
+                        # 縦線 (上)
+                        rect_v_top_main = QtCore.QRectF(
+                            self.center_x - half_thickness,
+                            self.center_y - self.crosshair_gap - self.crosshair_vline_length,
+                            self.crosshair_thickness,
+                            self.crosshair_vline_length
+                        )
+                        painter.drawRect(rect_v_top_main)
 
-                    # 縦線 (下)
-                    rect_v_bottom_main = QtCore.QRectF(
-                        self.center_x - half_thickness,
-                        self.center_y + self.crosshair_gap,
-                        self.crosshair_thickness,
-                        self.crosshair_vline_length
-                    )
-                    painter.drawRect(rect_v_bottom_main)
+                        # 縦線 (下)
+                        rect_v_bottom_main = QtCore.QRectF(
+                            self.center_x - half_thickness,
+                            self.center_y + self.crosshair_gap,
+                            self.crosshair_thickness,
+                            self.crosshair_vline_length
+                        )
+                        painter.drawRect(rect_v_bottom_main)
 
-                    # 横線 (左)
-                    rect_h_left_main = QtCore.QRectF(
-                        self.center_x - self.crosshair_gap - self.crosshair_hline_length,
-                        self.center_y - half_thickness,
-                        self.crosshair_hline_length,
-                        self.crosshair_thickness
-                    )
-                    painter.drawRect(rect_h_left_main)
+                        # 横線 (左)
+                        rect_h_left_main = QtCore.QRectF(
+                            self.center_x - self.crosshair_gap - self.crosshair_hline_length,
+                            self.center_y - half_thickness,
+                            self.crosshair_hline_length,
+                            self.crosshair_thickness
+                        )
+                        painter.drawRect(rect_h_left_main)
 
-                    # 横線 (右)
-                    rect_h_right_main = QtCore.QRectF(
-                        self.center_x + self.crosshair_gap,
-                        self.center_y - half_thickness,
-                        self.crosshair_hline_length,
-                        self.crosshair_thickness
-                    )
-                    painter.drawRect(rect_h_right_main)
+                        # 横線 (右)
+                        rect_h_right_main = QtCore.QRectF(
+                            self.center_x + self.crosshair_gap,
+                            self.center_y - half_thickness,
+                            self.crosshair_hline_length,
+                            self.crosshair_thickness
+                        )
+                        painter.drawRect(rect_h_right_main)
 
                 elif self.crosshair_shape == "円":
                     # 直径は線の内側から測定されるため、描画上の中心半径を計算
