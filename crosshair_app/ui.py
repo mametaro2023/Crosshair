@@ -169,6 +169,7 @@ class ControlPanel(QtWidgets.QWidget):
     update_crosshair_inner_alpha = handlers.update_crosshair_inner_alpha # New line
     update_circle_outline_alpha = handlers.update_circle_outline_alpha
     update_chevron_outline_alpha = handlers.update_chevron_outline_alpha
+    toggle_antialiasing = handlers.toggle_antialiasing # Add this line
 
     import_valorant_crosshair = handlers.import_valorant_crosshair
 

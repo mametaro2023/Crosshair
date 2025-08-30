@@ -99,6 +99,7 @@ class CrosshairOverlayBase(QtWidgets.QWidget):
             "chevron_length": 10,
             # 画像系クロスヘアのリサイズ設定
             "image_crosshair_size": 40,
+            "antialiasing_enabled": True, # New setting for anti-aliasing
         }
         self.drawing_order = loaded_config.get("drawing_order", "dot_on_top")
         self.last_selected_preset = loaded_config.get("last_selected", "デフォルト設定")
@@ -187,6 +188,7 @@ class CrosshairOverlayBase(QtWidgets.QWidget):
 
         # 画像系クロスヘアのリサイズ設定
         self.image_crosshair_size = config_data.get("image_crosshair_size", 40)
+        self.antialiasing_enabled = config_data.get("antialiasing_enabled", True) # Apply anti-aliasing setting
 
         self.update()
 
@@ -228,6 +230,7 @@ class CrosshairOverlayBase(QtWidgets.QWidget):
             "chevron_length": self.chevron_length,
             # 画像系クロスヘアのリサイズ設定
             "image_crosshair_size": self.image_crosshair_size,
+            "antialiasing_enabled": self.antialiasing_enabled, # Save anti-aliasing setting
         }
 
     def save_monitor_selection(self, index):

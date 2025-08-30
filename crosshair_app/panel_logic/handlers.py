@@ -101,6 +101,10 @@ def toggle_fade_on_shoot(self, checked):
     self.overlay.fade_on_shoot_enabled = checked
     self.schedule_overlay_update()
 
+def toggle_antialiasing(self, checked):
+    self.overlay.antialiasing_enabled = checked
+    self.schedule_overlay_update()
+
 def set_crosshair_color(self, val): 
     self.overlay.crosshair_color = val
 
@@ -249,6 +253,10 @@ def import_valorant_crosshair(self):
             for parsed_key, overlay_attr in settings_to_apply.items():
                 if parsed_key in parsed_settings:
                     setattr(self.overlay, overlay_attr, parsed_settings[parsed_key])
+
+            # Automatically disable anti-aliasing for Valorant crosshairs
+            self.overlay.antialiasing_enabled = False
+            self.antialiasing_checkbox.setChecked(False) # Update UI
 
             # Special handling for crosshair_color as it also updates a UI element directly
             if "crosshair_color" in parsed_settings:

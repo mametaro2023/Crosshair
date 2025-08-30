@@ -360,7 +360,7 @@ class OverlayDrawingMixin:
         self.center_y = self.height() // 2
                 
         painter = QtGui.QPainter(self)
-        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing, self.antialiasing_enabled)
 
         # --- カスタム形状 (.crshr) の描画 --- #
         shape = self.crosshair_shape

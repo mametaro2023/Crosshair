@@ -33,6 +33,11 @@ def create_tab(panel):
     panel.fade_on_shoot_checkbox.toggled.connect(panel.toggle_fade_on_shoot)
     general_layout.addWidget(panel.fade_on_shoot_checkbox)
 
+    # Anti-aliasing checkbox
+    panel.antialiasing_checkbox = QtWidgets.QCheckBox("アンチエイリアスを有効にする")
+    panel.antialiasing_checkbox.toggled.connect(panel.toggle_antialiasing)
+    general_layout.addWidget(panel.antialiasing_checkbox)
+
     # Drawing Order Selection
     drawing_order_layout = QtWidgets.QHBoxLayout()
     drawing_order_label = QtWidgets.QLabel("描画順序:")
