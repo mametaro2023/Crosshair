@@ -46,6 +46,15 @@ def create_tab(panel):
     outline_width_layout.addWidget(panel.outline_width_label)
     cross_advanced_layout.addRow("輪郭の太さ:", outline_width_layout)
 
+    panel.crosshair_outline_alpha_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+    panel.crosshair_outline_alpha_slider.setRange(0, 100)
+    panel.crosshair_outline_alpha_slider.valueChanged.connect(panel.update_crosshair_outline_alpha)
+    panel.crosshair_outline_alpha_label = QtWidgets.QLabel()
+    crosshair_outline_alpha_layout = QtWidgets.QHBoxLayout()
+    crosshair_outline_alpha_layout.addWidget(panel.crosshair_outline_alpha_slider)
+    crosshair_outline_alpha_layout.addWidget(panel.crosshair_outline_alpha_label)
+    cross_advanced_layout.addRow("輪郭の透明度:", crosshair_outline_alpha_layout)
+
     panel.vline_length_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
     panel.vline_length_slider.setRange(0, 20)
     panel.vline_length_slider.valueChanged.connect(panel.update_vline_length)
@@ -103,6 +112,15 @@ def create_tab(panel):
     circle_outline_width_layout.addWidget(panel.circle_outline_width_label)
     circle_advanced_layout.addRow("輪郭の太さ:", circle_outline_width_layout)
 
+    panel.circle_outline_alpha_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+    panel.circle_outline_alpha_slider.setRange(0, 100)
+    panel.circle_outline_alpha_slider.valueChanged.connect(panel.update_circle_outline_alpha)
+    panel.circle_outline_alpha_label = QtWidgets.QLabel()
+    circle_outline_alpha_layout = QtWidgets.QHBoxLayout()
+    circle_outline_alpha_layout.addWidget(panel.circle_outline_alpha_slider)
+    circle_outline_alpha_layout.addWidget(panel.circle_outline_alpha_label)
+    circle_advanced_layout.addRow("輪郭の透明度:", circle_outline_alpha_layout)
+
     panel.circle_thickness_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
     panel.circle_thickness_slider.setRange(0, 20)
     panel.circle_thickness_slider.valueChanged.connect(panel.update_circle_thickness)
@@ -141,6 +159,15 @@ def create_tab(panel):
     chevron_outline_width_layout.addWidget(panel.chevron_outline_width_slider)
     chevron_outline_width_layout.addWidget(panel.chevron_outline_width_label)
     chevron_advanced_layout.addRow("輪郭の太さ:", chevron_outline_width_layout)
+
+    panel.chevron_outline_alpha_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+    panel.chevron_outline_alpha_slider.setRange(0, 100)
+    panel.chevron_outline_alpha_slider.valueChanged.connect(panel.update_chevron_outline_alpha)
+    panel.chevron_outline_alpha_label = QtWidgets.QLabel()
+    chevron_outline_alpha_layout = QtWidgets.QHBoxLayout()
+    chevron_outline_alpha_layout.addWidget(panel.chevron_outline_alpha_slider)
+    chevron_outline_alpha_layout.addWidget(panel.chevron_outline_alpha_label)
+    chevron_advanced_layout.addRow("輪郭の透明度:", chevron_outline_alpha_layout)
 
     panel.chevron_thickness_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
     panel.chevron_thickness_slider.setRange(0, 20)

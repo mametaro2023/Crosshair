@@ -73,6 +73,7 @@ class CrosshairOverlayBase(QtWidgets.QWidget):
             # 十字アドバンスド設定
             "crosshair_outline_enabled": True,
             "crosshair_outline_width": 1,
+            "crosshair_outline_alpha": 1.0,
             "crosshair_vline_length": 10,
             "crosshair_hline_length": 10,
             "crosshair_thickness": 2,
@@ -81,11 +82,13 @@ class CrosshairOverlayBase(QtWidgets.QWidget):
             # 円アドバンスド設定
             "circle_outline_enabled": True,
             "circle_outline_width": 1,
+            "circle_outline_alpha": 1.0,
             "circle_thickness": 2,
             "circle_diameter": 50,
             # 矢印 (シェブロン) アドバンスド設定
             "chevron_outline_enabled": True,
             "chevron_outline_width": 1,
+            "chevron_outline_alpha": 1.0,
             "chevron_thickness": 2,
             "chevron_length": 10,
             # 画像系クロスヘアのリサイズ設定
@@ -155,6 +158,7 @@ class CrosshairOverlayBase(QtWidgets.QWidget):
         # 十字アドバンスド設定
         self.crosshair_outline_enabled = config_data.get("crosshair_outline_enabled", True)
         self.crosshair_outline_width = config_data.get("crosshair_outline_width", 1)
+        self.crosshair_outline_alpha = config_data.get("crosshair_outline_alpha", 1.0)
         self.crosshair_vline_length = config_data.get("crosshair_vline_length", 10)
         self.crosshair_hline_length = config_data.get("crosshair_hline_length", 10)
         self.crosshair_thickness = config_data.get("crosshair_thickness", 2)
@@ -163,12 +167,14 @@ class CrosshairOverlayBase(QtWidgets.QWidget):
         # 円アドバンスド設定
         self.circle_outline_enabled = config_data.get("circle_outline_enabled", True)
         self.circle_outline_width = config_data.get("circle_outline_width", 1)
+        self.circle_outline_alpha = config_data.get("circle_outline_alpha", 1.0)
         self.circle_thickness = config_data.get("circle_thickness", 2)
         self.circle_diameter = config_data.get("circle_diameter", 50)
 
         # 矢印 (シェブロン) アドバンスド設定
         self.chevron_outline_enabled = config_data.get("chevron_outline_enabled", True)
         self.chevron_outline_width = config_data.get("chevron_outline_width", 1)
+        self.chevron_outline_alpha = config_data.get("chevron_outline_alpha", 1.0)
         self.chevron_thickness = config_data.get("chevron_thickness", 2)
         self.chevron_length = config_data.get("chevron_length", 10)
 
@@ -194,6 +200,7 @@ class CrosshairOverlayBase(QtWidgets.QWidget):
             # 十字アドバンスド設定
             "crosshair_outline_enabled": self.crosshair_outline_enabled,
             "crosshair_outline_width": self.crosshair_outline_width,
+            "crosshair_outline_alpha": self.crosshair_outline_alpha,
             "crosshair_vline_length": self.crosshair_vline_length,
             "crosshair_hline_length": self.crosshair_hline_length,
             "crosshair_thickness": self.crosshair_thickness,
@@ -202,11 +209,13 @@ class CrosshairOverlayBase(QtWidgets.QWidget):
             # 円アドバンスド設定
             "circle_outline_enabled": self.circle_outline_enabled,
             "circle_outline_width": self.circle_outline_width,
+            "circle_outline_alpha": self.circle_outline_alpha,
             "circle_thickness": self.circle_thickness,
             "circle_diameter": self.circle_diameter,
             # 矢印 (シェブロン) アドバンスド設定
             "chevron_outline_enabled": self.chevron_outline_enabled,
             "chevron_outline_width": self.chevron_outline_width,
+            "chevron_outline_alpha": self.chevron_outline_alpha,
             "chevron_thickness": self.chevron_thickness,
             "chevron_length": self.chevron_length,
             # 画像系クロスヘアのリサイズ設定

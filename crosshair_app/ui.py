@@ -164,6 +164,10 @@ class ControlPanel(QtWidgets.QWidget):
 
     update_image_crosshair_size = handlers.update_image_crosshair_size
 
+    update_crosshair_outline_alpha = handlers.update_crosshair_outline_alpha
+    update_circle_outline_alpha = handlers.update_circle_outline_alpha
+    update_chevron_outline_alpha = handlers.update_chevron_outline_alpha
+
     # --- Remaining Logic Specific to ControlPanel ---
     def closeEvent(self, event):
         if self.overlay.is_dirty:

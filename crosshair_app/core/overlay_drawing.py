@@ -71,7 +71,9 @@ class OverlayDrawingMixin:
                     # 輪郭の描画 (長方形で描画)
                     if self.crosshair_outline_enabled:
                         painter.setPen(QtCore.Qt.NoPen) # 輪郭のペンは不要
-                        painter.setBrush(QtGui.QBrush(QtCore.Qt.black)) # 輪郭の色
+                        outline_color = QtGui.QColor(QtCore.Qt.black)
+                        outline_color.setAlphaF(self.crosshair_outline_alpha)
+                        painter.setBrush(QtGui.QBrush(outline_color)) # 輪郭の色
 
                         # floatになる可能性があるのでroundで丸める
                         outline_offset = round((self.crosshair_thickness / 2) + self.crosshair_outline_width)
@@ -153,7 +155,9 @@ class OverlayDrawingMixin:
                         # 輪郭は、本体の線の両側に描画される
                         # そのため、輪郭を含めた全体の太さは 本体の太さ + 輪郭の太さ * 2
                         outline_pen_width = self.circle_thickness + self.circle_outline_width * 2
-                        outline_pen = QtGui.QPen(QtCore.Qt.black, outline_pen_width, QtCore.Qt.SolidLine, QtCore.Qt.FlatCap)
+                        outline_color = QtGui.QColor(QtCore.Qt.black)
+                        outline_color.setAlphaF(self.circle_outline_alpha)
+                        outline_pen = QtGui.QPen(outline_color, outline_pen_width, QtCore.Qt.SolidLine, QtCore.Qt.FlatCap)
                         painter.setPen(outline_pen)
                         painter.setBrush(QtCore.Qt.NoBrush)
                         painter.drawEllipse(rect)
@@ -174,7 +178,9 @@ class OverlayDrawingMixin:
                     # 輪郭の描画
                     if self.chevron_outline_enabled and self.chevron_outline_width > 0:
                         outline_pen_width = self.chevron_thickness + self.chevron_outline_width * 2
-                        outline_pen = QtGui.QPen(QtCore.Qt.black, outline_pen_width, QtCore.Qt.SolidLine, QtCore.Qt.RoundCap)
+                        outline_color = QtGui.QColor(QtCore.Qt.black)
+                        outline_color.setAlphaF(self.chevron_outline_alpha)
+                        outline_pen = QtGui.QPen(outline_color, outline_pen_width, QtCore.Qt.SolidLine, QtCore.Qt.RoundCap)
                         painter.setPen(outline_pen)
                         # アンチエイリアシングを一時的に無効にする (1pxの場合)
                         if outline_pen_width == 1:

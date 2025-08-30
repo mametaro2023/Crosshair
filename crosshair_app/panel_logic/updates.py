@@ -26,6 +26,9 @@ def update_control_panel_ui(self):
     self.chevron_thickness_slider.blockSignals(True)
     self.chevron_length_slider.blockSignals(True)
     self.image_crosshair_size_slider.blockSignals(True)
+    self.crosshair_outline_alpha_slider.blockSignals(True)
+    self.circle_outline_alpha_slider.blockSignals(True)
+    self.chevron_outline_alpha_slider.blockSignals(True)
 
     # --- Update General and Non-Shape-Specific UI ---
     self.monitor_selection_box.setCurrentIndex(self.overlay.selected_monitor_index)
@@ -98,6 +101,8 @@ def update_control_panel_ui(self):
         self.hline_length_label.setText(f"{self.overlay.crosshair_hline_length}px")
         self.line_thickness_label.setText(f"{self.overlay.crosshair_thickness}px")
         self.gap_label.setText(f"{self.overlay.crosshair_gap}px")
+        self.crosshair_outline_alpha_slider.setValue(int(self.overlay.crosshair_outline_alpha * 100))
+        self.crosshair_outline_alpha_label.setText(f"{int(self.overlay.crosshair_outline_alpha * 100)}%")
 
     # Circle advanced settings
     if is_circle_shape:
@@ -108,6 +113,8 @@ def update_control_panel_ui(self):
         self.circle_outline_width_label.setText(f"{self.overlay.circle_outline_width}px")
         self.circle_thickness_label.setText(f"{self.overlay.circle_thickness}px")
         self.circle_diameter_label.setText(f"{self.overlay.circle_diameter}px")
+        self.circle_outline_alpha_slider.setValue(int(self.overlay.circle_outline_alpha * 100))
+        self.circle_outline_alpha_label.setText(f"{int(self.overlay.circle_outline_alpha * 100)}%")
 
     # Chevron advanced settings
     if is_chevron_shape:
@@ -118,6 +125,8 @@ def update_control_panel_ui(self):
         self.chevron_outline_width_label.setText(f"{self.overlay.chevron_outline_width}px")
         self.chevron_thickness_label.setText(f"{self.overlay.chevron_thickness}px")
         self.chevron_length_label.setText(f"{self.overlay.chevron_length}px")
+        self.chevron_outline_alpha_slider.setValue(int(self.overlay.chevron_outline_alpha * 100))
+        self.chevron_outline_alpha_label.setText(f"{int(self.overlay.chevron_outline_alpha * 100)}%")
 
     # Image crosshair settings
     if is_image_crosshair_shape:
@@ -151,6 +160,9 @@ def update_control_panel_ui(self):
     self.chevron_thickness_slider.blockSignals(False)
     self.chevron_length_slider.blockSignals(False)
     self.image_crosshair_size_slider.blockSignals(False)
+    self.crosshair_outline_alpha_slider.blockSignals(False)
+    self.circle_outline_alpha_slider.blockSignals(False)
+    self.chevron_outline_alpha_slider.blockSignals(False)
 
     self._initial_load_complete = True
 

@@ -189,3 +189,18 @@ def update_image_crosshair_size(self, val):
     self.overlay.image_crosshair_size = val
     self.image_crosshair_size_label.setText(f"{val}px")
     self.schedule_overlay_update()
+
+def update_crosshair_outline_alpha(self, val):
+    self.overlay.crosshair_outline_alpha = round(val / 100, 2)
+    self.crosshair_outline_alpha_label.setText(f"{val}%")
+    self.schedule_overlay_update()
+
+def update_circle_outline_alpha(self, val):
+    self.overlay.circle_outline_alpha = round(val / 100, 2)
+    self.circle_outline_alpha_label.setText(f"{val}%")
+    self.schedule_overlay_update()
+
+def update_chevron_outline_alpha(self, val):
+    self.overlay.chevron_outline_alpha = round(val / 100, 2)
+    self.chevron_outline_alpha_label.setText(f"{val}%")
+    self.schedule_overlay_update()
