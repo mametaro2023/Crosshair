@@ -50,6 +50,33 @@ def create_tab(panel):
     dot_alpha_layout.addWidget(panel.dot_alpha_slider)
     dot_alpha_layout.addWidget(panel.dot_alpha_value_edit)
     dot_layout.addLayout(dot_alpha_layout)
+
+    # X Offset
+    offset_x_layout = QtWidgets.QHBoxLayout()
+    panel.dot_offset_x_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+    panel.dot_offset_x_slider.setRange(-100, 100)
+    panel.dot_offset_x_slider.setValue(0)
+    panel.dot_offset_x_edit = QtWidgets.QLineEdit("0")
+    panel.dot_offset_x_edit.setFixedWidth(45)
+    panel.dot_offset_x_slider.valueChanged.connect(panel.update_dot_offset_x)
+    offset_x_layout.addWidget(QtWidgets.QLabel("X オフセット:"))
+    offset_x_layout.addWidget(panel.dot_offset_x_slider)
+    offset_x_layout.addWidget(panel.dot_offset_x_edit)
+    dot_layout.addLayout(offset_x_layout)
+
+    # Y Offset
+    offset_y_layout = QtWidgets.QHBoxLayout()
+    panel.dot_offset_y_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+    panel.dot_offset_y_slider.setRange(-100, 100)
+    panel.dot_offset_y_slider.setValue(0)
+    panel.dot_offset_y_edit = QtWidgets.QLineEdit("0")
+    panel.dot_offset_y_edit.setFixedWidth(45)
+    panel.dot_offset_y_slider.valueChanged.connect(panel.update_dot_offset_y)
+    offset_y_layout.addWidget(QtWidgets.QLabel("Y オフセット:"))
+    offset_y_layout.addWidget(panel.dot_offset_y_slider)
+    offset_y_layout.addWidget(panel.dot_offset_y_edit)
+    dot_layout.addLayout(offset_y_layout)
+
     dot_layout.addStretch()
 
     return dot_tab

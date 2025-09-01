@@ -159,6 +159,8 @@ class CrosshairOverlayBase(QtWidgets.QWidget):
         self.dot_inner_color = config_data.get("dot_inner_color", "#000000")
         self.crosshair_alpha = config_data.get("crosshair_alpha", 1.0)
         self.dot_alpha = config_data.get("dot_alpha", 1.0)
+        self.dot_offset_x = config_data.get("dot_offset_x", 0)
+        self.dot_offset_y = config_data.get("dot_offset_y", 0)
         self.fade_on_shoot_enabled = config_data.get("fade_on_shoot", False) 
         self.crosshair_shape = config_data.get("crosshair_shape", "十字")
         self.crosshair_image_path = config_data.get("crosshair_image_path", None)

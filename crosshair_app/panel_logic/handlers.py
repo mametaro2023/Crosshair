@@ -43,6 +43,34 @@ def _on_dot_alpha_input_finished(self):
     except ValueError:
         self.dot_alpha_value_edit.setText(f"{original_value:.2f}")
 
+def _on_dot_offset_x_input_finished(self):
+    original_value = self.overlay.dot_offset_x
+    text = self.dot_offset_x_edit.text()
+    text = text.translate(str.maketrans("０１２３４５６７８９－", "0123456789-"))
+    try:
+        value = int(text)
+        if value > 100: value = 100
+        if value < -100: value = -100
+        self.dot_offset_x_slider.setValue(value)
+        self.overlay.dot_offset_x = value
+        self.schedule_overlay_update()
+    except ValueError:
+        self.dot_offset_x_edit.setText(str(original_value))
+
+def _on_dot_offset_y_input_finished(self):
+    original_value = self.overlay.dot_offset_y
+    text = self.dot_offset_y_edit.text()
+    text = text.translate(str.maketrans("０１２３４５６７８９－", "0123456789-"))
+    try:
+        value = int(text)
+        if value > 100: value = 100
+        if value < -100: value = -100
+        self.dot_offset_y_slider.setValue(value)
+        self.overlay.dot_offset_y = value
+        self.schedule_overlay_update()
+    except ValueError:
+        self.dot_offset_y_edit.setText(str(original_value))
+
 def update_crosshair_shape(self, shape_text):
     if shape_text == "新しく作る":
         previous_shape = self.overlay.crosshair_shape

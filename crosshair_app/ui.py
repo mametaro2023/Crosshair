@@ -142,11 +142,17 @@ class ControlPanel(QtWidgets.QWidget):
     update_outer_line_thickness = updates.update_outer_line_thickness
     update_outer_gap = updates.update_outer_gap
 
+    # --- ここからドットオフセット ---
+    update_dot_offset_x = updates.update_dot_offset_x
+    update_dot_offset_y = updates.update_dot_offset_y
+
     # --- Event Handlers ---
         # Event Handlers
     _on_alpha_input_finished = handlers._on_alpha_input_finished
     _on_dot_size_input_finished = handlers._on_dot_size_input_finished
     _on_dot_alpha_input_finished = handlers._on_dot_alpha_input_finished
+    _on_dot_offset_x_input_finished = handlers._on_dot_offset_x_input_finished
+    _on_dot_offset_y_input_finished = handlers._on_dot_offset_y_input_finished
     update_crosshair_shape = handlers.update_crosshair_shape
     select_custom_image = handlers.select_custom_image
     toggle_crosshair_button = handlers.toggle_crosshair_button

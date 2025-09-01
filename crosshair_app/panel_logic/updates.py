@@ -1,5 +1,4 @@
 
-import os
 
 def update_control_panel_ui(self):
     # --- Block Signals ---
@@ -37,6 +36,11 @@ def update_control_panel_ui(self):
         self.outer_line_alpha_slider.blockSignals(True)
         self.outer_line_thickness_slider.blockSignals(True)
         self.outer_gap_slider.blockSignals(True)
+    if hasattr(self, 'dot_offset_x_slider'):
+        self.dot_offset_x_slider.blockSignals(True)
+        self.dot_offset_y_slider.blockSignals(True)
+        self.dot_offset_x_edit.blockSignals(True)
+        self.dot_offset_y_edit.blockSignals(True)
 
     # --- Update General and Non-Shape-Specific UI ---
     self.monitor_selection_box.setCurrentIndex(self.overlay.selected_monitor_index)
@@ -88,6 +92,11 @@ def update_control_panel_ui(self):
     self.dot_in_color_square.update_color(self.overlay.dot_inner_color)
     self.dot_alpha_slider.setValue(int(self.overlay.dot_alpha * 100))
     self.dot_alpha_value_edit.setText(f"{self.overlay.dot_alpha:.2f}")
+    if hasattr(self, 'dot_offset_x_slider'):
+        self.dot_offset_x_slider.setValue(self.overlay.dot_offset_x)
+        self.dot_offset_y_slider.setValue(self.overlay.dot_offset_y)
+        self.dot_offset_x_edit.setText(str(self.overlay.dot_offset_x))
+        self.dot_offset_y_edit.setText(str(self.overlay.dot_offset_y))
 
     # Crosshair common settings
     self.ch_color_square.update_color(self.overlay.crosshair_color)
@@ -192,8 +201,14 @@ def update_control_panel_ui(self):
         self.outer_line_alpha_slider.blockSignals(False)
         self.outer_line_thickness_slider.blockSignals(False)
         self.outer_gap_slider.blockSignals(False)
+    if hasattr(self, 'dot_offset_x_slider'):
+        self.dot_offset_x_slider.blockSignals(False)
+        self.dot_offset_y_slider.blockSignals(False)
+        self.dot_offset_x_edit.blockSignals(False)
+        self.dot_offset_y_edit.blockSignals(False)
 
     self._initial_load_complete = True
+
 
 def update_outline_enabled(self, checked):
     self.overlay.crosshair_outline_enabled = checked
@@ -279,4 +294,14 @@ def update_outer_line_thickness(self, val):
 def update_outer_gap(self, val):
     self.overlay.outer_gap = val
     self.outer_gap_label.setText(f"{val}px")
+    self.schedule_overlay_update()
+
+def update_dot_offset_x(self, val):
+    self.overlay.dot_offset_x = val
+    self.dot_offset_x_edit.setText(str(val))
+    self.schedule_overlay_update()
+
+def update_dot_offset_y(self, val):
+    self.overlay.dot_offset_y = val
+    self.dot_offset_y_edit.setText(str(val))
     self.schedule_overlay_update()

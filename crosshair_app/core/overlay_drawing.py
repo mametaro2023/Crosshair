@@ -69,78 +69,6 @@ class OverlayDrawingMixin:
                 color.setAlphaF(ch_alpha) # Moved here
                 
                 if self.crosshair_shape == "十字":
-                    # --- Outer Crosshair Drawing ---
-                    if self.outer_line_enabled and self.outer_line_thickness > 0:
-                        outer_half_thickness = self.outer_line_thickness / 2.0
-
-                        # 1. Draw outline for the outer crosshair
-                        if self.crosshair_outline_enabled and self.crosshair_outline_width > 0:
-                            outline_color = QtGui.QColor(QtCore.Qt.black)
-                            outline_color.setAlphaF(self.crosshair_outline_alpha)
-                            painter.setPen(QtCore.Qt.NoPen)
-                            painter.setBrush(QtGui.QBrush(outline_color))
-
-                            # Top outline
-                            painter.drawRect(QtCore.QRectF(
-                                self.center_x - (outer_half_thickness + self.crosshair_outline_width),
-                                self.center_y - self.outer_gap - self.outer_vline_length - self.crosshair_outline_width,
-                                self.outer_line_thickness + self.crosshair_outline_width * 2,
-                                self.outer_vline_length + self.crosshair_outline_width * 2
-                            ))
-                            # Bottom outline
-                            painter.drawRect(QtCore.QRectF(
-                                self.center_x - (outer_half_thickness + self.crosshair_outline_width),
-                                self.center_y + self.outer_gap - self.crosshair_outline_width,
-                                self.outer_line_thickness + self.crosshair_outline_width * 2,
-                                self.outer_vline_length + self.crosshair_outline_width * 2
-                            ))
-                            # Left outline
-                            painter.drawRect(QtCore.QRectF(
-                                self.center_x - self.outer_gap - self.outer_hline_length - self.crosshair_outline_width,
-                                self.center_y - (outer_half_thickness + self.crosshair_outline_width),
-                                self.outer_hline_length + self.crosshair_outline_width * 2,
-                                self.outer_line_thickness + self.crosshair_outline_width * 2
-                            ))
-                            # Right outline
-                            painter.drawRect(QtCore.QRectF(
-                                self.center_x + self.outer_gap - self.crosshair_outline_width,
-                                self.center_y - (outer_half_thickness + self.crosshair_outline_width),
-                                self.outer_hline_length + self.crosshair_outline_width * 2,
-                                self.outer_line_thickness + self.crosshair_outline_width * 2
-                            ))
-
-                            # Clear the inside of the outline
-                            painter.setCompositionMode(QtGui.QPainter.CompositionMode_Clear)
-                            painter.setBrush(QtGui.QBrush(QtCore.Qt.black))
-                            painter.setPen(QtCore.Qt.NoPen)
-                            
-                            # Top cutout
-                            painter.drawRect(QtCore.QRectF(self.center_x - outer_half_thickness, self.center_y - self.outer_gap - self.outer_vline_length, self.outer_line_thickness, self.outer_vline_length))
-                            # Bottom cutout
-                            painter.drawRect(QtCore.QRectF(self.center_x - outer_half_thickness, self.center_y + self.outer_gap, self.outer_line_thickness, self.outer_vline_length))
-                            # Left cutout
-                            painter.drawRect(QtCore.QRectF(self.center_x - self.outer_gap - self.outer_hline_length, self.center_y - outer_half_thickness, self.outer_hline_length, self.outer_line_thickness))
-                            # Right cutout
-                            painter.drawRect(QtCore.QRectF(self.center_x + self.outer_gap, self.center_y - outer_half_thickness, self.outer_hline_length, self.outer_line_thickness))
-
-                            painter.setCompositionMode(QtGui.QPainter.CompositionMode_SourceOver)
-
-                        # 2. Draw the main body of the outer crosshair
-                        if self.outer_line_alpha > 0.0:
-                            outer_color = QtGui.QColor(self.crosshair_color)
-                            outer_color.setAlphaF(self.outer_line_alpha) # Use outer alpha
-                            painter.setPen(QtCore.Qt.NoPen)
-                            painter.setBrush(QtGui.QBrush(outer_color))
-                            
-                            # Top
-                            painter.drawRect(QtCore.QRectF(self.center_x - outer_half_thickness, self.center_y - self.outer_gap - self.outer_vline_length, self.outer_line_thickness, self.outer_vline_length))
-                            # Bottom
-                            painter.drawRect(QtCore.QRectF(self.center_x - outer_half_thickness, self.center_y + self.outer_gap, self.outer_line_thickness, self.outer_vline_length))
-                            # Left
-                            painter.drawRect(QtCore.QRectF(self.center_x - self.outer_gap - self.outer_hline_length, self.center_y - outer_half_thickness, self.outer_hline_length, self.outer_line_thickness))
-                            # Right
-                            painter.drawRect(QtCore.QRectF(self.center_x + self.outer_gap, self.center_y - outer_half_thickness, self.outer_hline_length, self.outer_line_thickness))
-
                     # --- Inner (Original) Crosshair Drawing ---
                     if self.crosshair_thickness > 0:
                         half_thickness = self.crosshair_thickness / 2.0
@@ -276,6 +204,78 @@ class OverlayDrawingMixin:
                             )
                             painter.drawRect(rect_h_right_main)
 
+                    # --- Outer Crosshair Drawing ---
+                    if self.outer_line_enabled and self.outer_line_thickness > 0:
+                        outer_half_thickness = self.outer_line_thickness / 2.0
+
+                        # 1. Draw outline for the outer crosshair
+                        if self.crosshair_outline_enabled and self.crosshair_outline_width > 0:
+                            outline_color = QtGui.QColor(QtCore.Qt.black)
+                            outline_color.setAlphaF(self.crosshair_outline_alpha)
+                            painter.setPen(QtCore.Qt.NoPen)
+                            painter.setBrush(QtGui.QBrush(outline_color))
+
+                            # Top outline
+                            painter.drawRect(QtCore.QRectF(
+                                self.center_x - (outer_half_thickness + self.crosshair_outline_width),
+                                self.center_y - self.outer_gap - self.outer_vline_length - self.crosshair_outline_width,
+                                self.outer_line_thickness + self.crosshair_outline_width * 2,
+                                self.outer_vline_length + self.crosshair_outline_width * 2
+                            ))
+                            # Bottom outline
+                            painter.drawRect(QtCore.QRectF(
+                                self.center_x - (outer_half_thickness + self.crosshair_outline_width),
+                                self.center_y + self.outer_gap - self.crosshair_outline_width,
+                                self.outer_line_thickness + self.crosshair_outline_width * 2,
+                                self.outer_vline_length + self.crosshair_outline_width * 2
+                            ))
+                            # Left outline
+                            painter.drawRect(QtCore.QRectF(
+                                self.center_x - self.outer_gap - self.outer_hline_length - self.crosshair_outline_width,
+                                self.center_y - (outer_half_thickness + self.crosshair_outline_width),
+                                self.outer_hline_length + self.crosshair_outline_width * 2,
+                                self.outer_line_thickness + self.crosshair_outline_width * 2
+                            ))
+                            # Right outline
+                            painter.drawRect(QtCore.QRectF(
+                                self.center_x + self.outer_gap - self.crosshair_outline_width,
+                                self.center_y - (outer_half_thickness + self.crosshair_outline_width),
+                                self.outer_hline_length + self.crosshair_outline_width * 2,
+                                self.outer_line_thickness + self.crosshair_outline_width * 2
+                            ))
+
+                            # Clear the inside of the outline
+                            painter.setCompositionMode(QtGui.QPainter.CompositionMode_Clear)
+                            painter.setBrush(QtGui.QBrush(QtCore.Qt.black))
+                            painter.setPen(QtCore.Qt.NoPen)
+                            
+                            # Top cutout
+                            painter.drawRect(QtCore.QRectF(self.center_x - outer_half_thickness, self.center_y - self.outer_gap - self.outer_vline_length, self.outer_line_thickness, self.outer_vline_length))
+                            # Bottom cutout
+                            painter.drawRect(QtCore.QRectF(self.center_x - outer_half_thickness, self.center_y + self.outer_gap, self.outer_line_thickness, self.outer_vline_length))
+                            # Left cutout
+                            painter.drawRect(QtCore.QRectF(self.center_x - self.outer_gap - self.outer_hline_length, self.center_y - outer_half_thickness, self.outer_hline_length, self.outer_line_thickness))
+                            # Right cutout
+                            painter.drawRect(QtCore.QRectF(self.center_x + self.outer_gap, self.center_y - outer_half_thickness, self.outer_hline_length, self.outer_line_thickness))
+
+                            painter.setCompositionMode(QtGui.QPainter.CompositionMode_SourceOver)
+
+                        # 2. Draw the main body of the outer crosshair
+                        if self.outer_line_alpha > 0.0:
+                            outer_color = QtGui.QColor(self.crosshair_color)
+                            outer_color.setAlphaF(self.outer_line_alpha) # Use outer alpha
+                            painter.setPen(QtCore.Qt.NoPen)
+                            painter.setBrush(QtGui.QBrush(outer_color))
+                            
+                            # Top
+                            painter.drawRect(QtCore.QRectF(self.center_x - outer_half_thickness, self.center_y - self.outer_gap - self.outer_vline_length, self.outer_line_thickness, self.outer_vline_length))
+                            # Bottom
+                            painter.drawRect(QtCore.QRectF(self.center_x - outer_half_thickness, self.center_y + self.outer_gap, self.outer_line_thickness, self.outer_vline_length))
+                            # Left
+                            painter.drawRect(QtCore.QRectF(self.center_x - self.outer_gap - self.outer_hline_length, self.center_y - outer_half_thickness, self.outer_hline_length, self.outer_line_thickness))
+                            # Right
+                            painter.drawRect(QtCore.QRectF(self.center_x + self.outer_gap, self.center_y - outer_half_thickness, self.outer_hline_length, self.outer_line_thickness))
+
                 elif self.crosshair_shape == "円":
                     # 直径は線の内側から測定されるため、描画上の中心半径を計算
                     # 線の中心は (直径/2 + 太さ/2) の位置に来る
@@ -360,6 +360,9 @@ class OverlayDrawingMixin:
             dot_alpha *= 0.3
 
         if self.dot_visible and self.dot_radius > 0:
+            center_x = self.center_x + self.dot_offset_x
+            center_y = self.center_y + self.dot_offset_y
+
             painter.setOpacity(1.0) # Reset opacity for dot
             outer_color = QtGui.QColor(self.dot_outer_color)
             outer_color.setAlphaF(dot_alpha)
@@ -367,63 +370,51 @@ class OverlayDrawingMixin:
             painter.setPen(QtGui.QPen(outer_color))
 
             if self.dot_shape == "円":
-                painter.drawEllipse(QtCore.QRect(self.center_x - self.dot_radius, self.center_y - self.dot_radius, self.dot_radius * 2, self.dot_radius * 2))
+                painter.drawEllipse(QtCore.QRect(center_x - self.dot_radius, center_y - self.dot_radius, self.dot_radius * 2, self.dot_radius * 2))
                 if self.dot_radius > 1:
                     inner_r = self.dot_radius - 1
                     inner_color = QtGui.QColor(self.dot_inner_color)
                     inner_color.setAlphaF(dot_alpha)
                     painter.setBrush(QtGui.QBrush(inner_color)); painter.setPen(QtGui.QPen(inner_color))
-                    painter.drawEllipse(QtCore.QRect(self.center_x - inner_r, self.center_y - inner_r, inner_r * 2, inner_r * 2))
+                    painter.drawEllipse(QtCore.QRect(center_x - inner_r, center_y - inner_r, inner_r * 2, inner_r * 2))
             elif self.dot_shape == "正方形":
                 side_length = self.dot_radius * 2
-                painter.drawRect(QtCore.QRect(self.center_x - self.dot_radius, self.center_y - self.dot_radius, side_length, side_length))
+                painter.drawRect(QtCore.QRect(center_x - self.dot_radius, center_y - self.dot_radius, side_length, side_length))
                 if self.dot_radius > 1:
                     inner_r = self.dot_radius - 1
                     inner_color = QtGui.QColor(self.dot_inner_color)
                     inner_color.setAlphaF(dot_alpha)
                     painter.setBrush(QtGui.QBrush(inner_color)); painter.setPen(QtGui.QPen(inner_color))
-                    painter.drawRect(QtCore.QRect(self.center_x - inner_r, self.center_y - inner_r, inner_r * 2, inner_r * 2))
+                    painter.drawRect(QtCore.QRect(center_x - inner_r, center_y - inner_r, inner_r * 2, inner_r * 2))
             elif self.dot_shape == "正三角形上向き":
-                # 正三角形の計算
-                # dot_radius が外側の三角形の半径、dot_radius - 1 が内側の三角形の半径と考える
-                
-                # 外側の三角形 (輪郭用) の計算
                 outer_side_length = self.dot_radius * 2.0
                 outer_height = outer_side_length * (math.sqrt(3) / 2)
-                
-                # 外側の三角形の頂点 (上の頂点が self.center_y に来るように)
                 outer_points = [
-                    QtCore.QPointF(self.center_x, self.center_y), # 上の頂点
-                    QtCore.QPointF(self.center_x - outer_side_length / 2, self.center_y + outer_height), # 左下の頂点
-                    QtCore.QPointF(self.center_x + outer_side_length / 2, self.center_y + outer_height)  # 右下の頂点
+                    QtCore.QPointF(center_x, center_y),
+                    QtCore.QPointF(center_x - outer_side_length / 2, center_y + outer_height),
+                    QtCore.QPointF(center_x + outer_side_length / 2, center_y + outer_height)
                 ]
 
-                # 輪郭の描画 (dot_radius > 1 の場合のみ)
                 if self.dot_radius > 1:
                     outline_color = QtGui.QColor(self.dot_outer_color)
                     outline_color.setAlphaF(dot_alpha)
-                    outline_pen_width = 1 
-                    
+                    outline_pen_width = 1
                     painter.setPen(QtGui.QPen(outline_color, outline_pen_width, QtCore.Qt.SolidLine, QtCore.Qt.RoundCap, QtCore.Qt.RoundJoin))
-                    painter.setBrush(QtCore.Qt.NoBrush) 
+                    painter.setBrush(QtCore.Qt.NoBrush)
                     painter.drawPolygon(QtGui.QPolygonF(outer_points))
 
-                # 内側の三角形 (本体) の計算
                 inner_side_length = (self.dot_radius - 1) * 2.0 if self.dot_radius > 1 else self.dot_radius * 2.0
                 inner_height = inner_side_length * (math.sqrt(3) / 2)
-
-                # 内側の三角形の頂点 (上の頂点が self.center_y に来るように)
                 inner_points = [
-                    QtCore.QPointF(self.center_x, self.center_y), # 上の頂点
-                    QtCore.QPointF(self.center_x - inner_side_length / 2, self.center_y + inner_height), # 左下の頂点
-                    QtCore.QPointF(self.center_x + inner_side_length / 2, self.center_y + inner_height), # 右下の頂点
+                    QtCore.QPointF(center_x, center_y),
+                    QtCore.QPointF(center_x - inner_side_length / 2, center_y + inner_height),
+                    QtCore.QPointF(center_x + inner_side_length / 2, center_y + inner_height)
                 ]
 
-                # 本体の描画
                 fill_color = QtGui.QColor(self.dot_inner_color) if self.dot_radius > 1 else QtGui.QColor(self.dot_outer_color)
                 fill_color.setAlphaF(dot_alpha)
                 painter.setBrush(QtGui.QBrush(fill_color))
-                painter.setPen(QtCore.Qt.NoPen) 
+                painter.setPen(QtCore.Qt.NoPen)
                 painter.drawPolygon(QtGui.QPolygonF(inner_points))
 
     def paintEvent(self, event):
