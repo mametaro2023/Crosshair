@@ -284,6 +284,12 @@ def parse_valorant_crosshair_code(code):
         '0v': ('crosshair_vline_length', int),
         '0o': ('crosshair_gap', int), # Corrected from '0g' to '0o'
         '0t': ('crosshair_thickness', int),
+        # --- ここから外枠 ---
+        '1a': ('outer_line_alpha', float),
+        '1l': ('outer_hline_length', int),
+        '1v': ('outer_vline_length', int),
+        '1o': ('outer_gap', int),
+        '1t': ('outer_line_thickness', int),
     }
 
     # Find the starting point of actual parameters
@@ -358,6 +364,14 @@ def parse_valorant_crosshair_code(code):
             i += 2
             continue
 
+        # Handle '1b' parameter explicitly for outer crosshair visibility
+        if key == '1b':
+            if value_str == '1':
+                settings['outer_line_enabled'] = True
+            # Default is False, so no 'else' needed
+            i += 2
+            continue
+
         if key in param_map:
             internal_key, convert_func = param_map[key]
             try:
@@ -382,6 +396,10 @@ def parse_valorant_crosshair_code(code):
     # Handle 0v default to 0l if 0v is not present
     if 'crosshair_hline_length' in settings and 'crosshair_vline_length' not in settings:
         settings['crosshair_vline_length'] = settings['crosshair_hline_length']
+
+    # Handle 1v default to 1l if 1v is not present
+    if 'outer_hline_length' in settings and 'outer_vline_length' not in settings:
+        settings['outer_vline_length'] = settings['outer_hline_length']
 
     # Handle 0t default to 2 if 0t is not present
     if 'crosshair_thickness' not in settings:

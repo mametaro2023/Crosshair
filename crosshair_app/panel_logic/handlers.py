@@ -248,6 +248,13 @@ def import_valorant_crosshair(self):
                 "crosshair_thickness": "crosshair_thickness",
                 "crosshair_color": "crosshair_color",
                 "dot_visible": "dot_visible", # Mapped from 'd' in utils.py
+                # --- ここから外枠 ---
+                "outer_line_enabled": "outer_line_enabled",
+                "outer_line_alpha": "outer_line_alpha",
+                "outer_hline_length": "outer_hline_length",
+                "outer_vline_length": "outer_vline_length",
+                "outer_gap": "outer_gap",
+                "outer_line_thickness": "outer_line_thickness",
             }
 
             for parsed_key, overlay_attr in settings_to_apply.items():

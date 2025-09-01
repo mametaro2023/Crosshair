@@ -171,6 +171,13 @@ class CrosshairOverlayBase(QtWidgets.QWidget):
         self.crosshair_hline_length = config_data.get("crosshair_hline_length", 10)
         self.crosshair_thickness = config_data.get("crosshair_thickness", 2)
         self.crosshair_gap = config_data.get("crosshair_gap", 5)
+        # 外枠の設定
+        self.outer_line_enabled = config_data.get("outer_line_enabled", False)
+        self.outer_vline_length = config_data.get("outer_vline_length", 10)
+        self.outer_hline_length = config_data.get("outer_hline_length", 10)
+        self.outer_line_alpha = config_data.get("outer_line_alpha", 1.0)
+        self.outer_line_thickness = config_data.get("outer_line_thickness", 2)
+        self.outer_gap = config_data.get("outer_gap", 5)
         self.drawing_order = config_data.get("drawing_order", "dot_on_top")
         # 円アドバンスド設定
         self.circle_outline_enabled = config_data.get("circle_outline_enabled", True)

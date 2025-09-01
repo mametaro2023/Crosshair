@@ -134,6 +134,14 @@ class ControlPanel(QtWidgets.QWidget):
     update_circle_diameter = updates.update_circle_diameter
     update_drawing_order = updates.update_drawing_order
 
+    # --- ここから外枠 ---
+    update_outer_line_enabled = updates.update_outer_line_enabled
+    update_outer_vline_length = updates.update_outer_vline_length
+    update_outer_hline_length = updates.update_outer_hline_length
+    update_outer_line_alpha = updates.update_outer_line_alpha
+    update_outer_line_thickness = updates.update_outer_line_thickness
+    update_outer_gap = updates.update_outer_gap
+
     # --- Event Handlers ---
         # Event Handlers
     _on_alpha_input_finished = handlers._on_alpha_input_finished

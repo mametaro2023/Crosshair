@@ -100,6 +100,57 @@ def create_tab(panel):
     gap_layout.addWidget(panel.gap_label)
     cross_advanced_layout.addRow("ギャップ:", gap_layout)
 
+    # --- ここから外枠の設定 ---
+    panel.outer_line_btn = QtWidgets.QCheckBox("外枠")
+    panel.outer_line_btn.toggled.connect(panel.update_outer_line_enabled)
+    cross_advanced_layout.addRow(panel.outer_line_btn)
+
+    panel.outer_vline_length_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+    panel.outer_vline_length_slider.setRange(0, 10)
+    panel.outer_vline_length_slider.valueChanged.connect(panel.update_outer_vline_length)
+    panel.outer_vline_length_label = QtWidgets.QLabel()
+    outer_vline_length_layout = QtWidgets.QHBoxLayout()
+    outer_vline_length_layout.addWidget(panel.outer_vline_length_slider)
+    outer_vline_length_layout.addWidget(panel.outer_vline_length_label)
+    cross_advanced_layout.addRow("外枠の縦線の長さ:", outer_vline_length_layout)
+
+    panel.outer_hline_length_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+    panel.outer_hline_length_slider.setRange(0, 10)
+    panel.outer_hline_length_slider.valueChanged.connect(panel.update_outer_hline_length)
+    panel.outer_hline_length_label = QtWidgets.QLabel()
+    outer_hline_length_layout = QtWidgets.QHBoxLayout()
+    outer_hline_length_layout.addWidget(panel.outer_hline_length_slider)
+    outer_hline_length_layout.addWidget(panel.outer_hline_length_label)
+    cross_advanced_layout.addRow("外枠の横線の長さ:", outer_hline_length_layout)
+
+    panel.outer_line_alpha_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+    panel.outer_line_alpha_slider.setRange(0, 100)
+    panel.outer_line_alpha_slider.valueChanged.connect(panel.update_outer_line_alpha)
+    panel.outer_line_alpha_label = QtWidgets.QLabel()
+    outer_line_alpha_layout = QtWidgets.QHBoxLayout()
+    outer_line_alpha_layout.addWidget(panel.outer_line_alpha_slider)
+    outer_line_alpha_layout.addWidget(panel.outer_line_alpha_label)
+    cross_advanced_layout.addRow("外枠の透明度:", outer_line_alpha_layout)
+
+    panel.outer_line_thickness_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+    panel.outer_line_thickness_slider.setRange(0, 10)
+    panel.outer_line_thickness_slider.valueChanged.connect(panel.update_outer_line_thickness)
+    panel.outer_line_thickness_label = QtWidgets.QLabel()
+    outer_line_thickness_layout = QtWidgets.QHBoxLayout()
+    outer_line_thickness_layout.addWidget(panel.outer_line_thickness_slider)
+    outer_line_thickness_layout.addWidget(panel.outer_line_thickness_label)
+    cross_advanced_layout.addRow("外枠の太さ:", outer_line_thickness_layout)
+
+    panel.outer_gap_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+    panel.outer_gap_slider.setRange(0, 20)
+    panel.outer_gap_slider.valueChanged.connect(panel.update_outer_gap)
+    panel.outer_gap_label = QtWidgets.QLabel()
+    outer_gap_layout = QtWidgets.QHBoxLayout()
+    outer_gap_layout.addWidget(panel.outer_gap_slider)
+    outer_gap_layout.addWidget(panel.outer_gap_label)
+    cross_advanced_layout.addRow("外枠のギャップ:", outer_gap_layout)
+    # --- ここまで外枠の設定 ---
+
     advanced_container_layout.addWidget(panel.cross_settings_widget)
 
     # --- 円アドバンスド設定ウィジェット ---

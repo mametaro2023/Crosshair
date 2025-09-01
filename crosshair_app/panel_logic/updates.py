@@ -30,6 +30,13 @@ def update_control_panel_ui(self):
     self.circle_outline_alpha_slider.blockSignals(True)
     self.chevron_outline_alpha_slider.blockSignals(True)
     self.dot_shape_box.blockSignals(True)
+    if hasattr(self, 'outer_line_btn'):
+        self.outer_line_btn.blockSignals(True)
+        self.outer_vline_length_slider.blockSignals(True)
+        self.outer_hline_length_slider.blockSignals(True)
+        self.outer_line_alpha_slider.blockSignals(True)
+        self.outer_line_thickness_slider.blockSignals(True)
+        self.outer_gap_slider.blockSignals(True)
 
     # --- Update General and Non-Shape-Specific UI ---
     self.monitor_selection_box.setCurrentIndex(self.overlay.selected_monitor_index)
@@ -62,8 +69,6 @@ def update_control_panel_ui(self):
     # Visibility of the main advanced settings toggle button
     if hasattr(self, 'advanced_settings_toggle_btn'):
         self.advanced_settings_toggle_btn.setVisible(is_advanced_shape)
-        # If the shape changes, collapse the advanced view
-        
         self.shape_box.setProperty("previous_shape", shape)
 
     # Visibility of other shape-related UI
@@ -107,6 +112,18 @@ def update_control_panel_ui(self):
         self.crosshair_outline_alpha_label.setText(f"{int(self.overlay.crosshair_outline_alpha * 100)}%")
         self.crosshair_inner_alpha_slider.setValue(int(self.overlay.crosshair_inner_alpha * 100))
         self.crosshair_inner_alpha_label.setText(f"{int(self.overlay.crosshair_inner_alpha * 100)}%")
+        # --- Outer Crosshair ---
+        self.outer_line_btn.setChecked(self.overlay.outer_line_enabled)
+        self.outer_vline_length_slider.setValue(self.overlay.outer_vline_length)
+        self.outer_hline_length_slider.setValue(self.overlay.outer_hline_length)
+        self.outer_line_alpha_slider.setValue(int(self.overlay.outer_line_alpha * 100))
+        self.outer_line_thickness_slider.setValue(self.overlay.outer_line_thickness)
+        self.outer_gap_slider.setValue(self.overlay.outer_gap)
+        self.outer_vline_length_label.setText(f"{self.overlay.outer_vline_length}px")
+        self.outer_hline_length_label.setText(f"{self.overlay.outer_hline_length}px")
+        self.outer_line_alpha_label.setText(f"{int(self.overlay.outer_line_alpha * 100)}%")
+        self.outer_line_thickness_label.setText(f"{self.overlay.outer_line_thickness}px")
+        self.outer_gap_label.setText(f"{self.overlay.outer_gap}px")
 
     # Circle advanced settings
     if is_circle_shape:
@@ -168,6 +185,13 @@ def update_control_panel_ui(self):
     self.circle_outline_alpha_slider.blockSignals(False)
     self.chevron_outline_alpha_slider.blockSignals(False)
     self.dot_shape_box.blockSignals(False)
+    if hasattr(self, 'outer_line_btn'):
+        self.outer_line_btn.blockSignals(False)
+        self.outer_vline_length_slider.blockSignals(False)
+        self.outer_hline_length_slider.blockSignals(False)
+        self.outer_line_alpha_slider.blockSignals(False)
+        self.outer_line_thickness_slider.blockSignals(False)
+        self.outer_gap_slider.blockSignals(False)
 
     self._initial_load_complete = True
 
@@ -226,3 +250,33 @@ def update_drawing_order(self, index):
         self.overlay.drawing_order = "crosshair_on_top"
     self.overlay.save_global_config() # Save the new drawing order
     self.schedule_overlay_update() # Request overlay redraw
+
+def update_outer_line_enabled(self, checked):
+    self.overlay.outer_line_enabled = checked
+    self.schedule_overlay_update()
+
+def update_outer_vline_length(self, val):
+    self.overlay.outer_vline_length = val
+    self.outer_vline_length_label.setText(f"{val}px")
+    self.schedule_overlay_update()
+
+def update_outer_hline_length(self, val):
+    self.overlay.outer_hline_length = val
+    self.outer_hline_length_label.setText(f"{val}px")
+    self.schedule_overlay_update()
+
+def update_outer_line_alpha(self, val):
+    alpha = val / 100.0
+    self.overlay.outer_line_alpha = alpha
+    self.outer_line_alpha_label.setText(f"{val}%")
+    self.schedule_overlay_update()
+
+def update_outer_line_thickness(self, val):
+    self.overlay.outer_line_thickness = val
+    self.outer_line_thickness_label.setText(f"{val}px")
+    self.schedule_overlay_update()
+
+def update_outer_gap(self, val):
+    self.overlay.outer_gap = val
+    self.outer_gap_label.setText(f"{val}px")
+    self.schedule_overlay_update()
