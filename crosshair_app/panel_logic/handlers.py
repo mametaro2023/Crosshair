@@ -5,71 +5,115 @@ from .. import utils
 from ..editor.editor_dialog import EditorDialog
 from ..dialogs import KeyCaptureDialog
 
-def _on_alpha_input_finished(self):
-    original_value = self.overlay.crosshair_alpha
-    text = self.alpha_value_edit.text()
-    text = text.translate(str.maketrans("０１２３４５６７８９．", "0123456789."))
-    try:
-        value = float(text)
-        value = int(value * 100) / 100.0
-        if value > 1.0: value = 1.0
-        if value < 0.0: value = 0.0
-        self.alpha_slider.setValue(int(value * 100))
-    except ValueError:
-        self.alpha_value_edit.setText(f"{original_value:.2f}")
+def _on_alpha_input_finished(panel_self):
+    def handler():
+        original_value = panel_self.overlay.crosshair_alpha
+        text = panel_self.alpha_value_edit.text()
+        text = text.translate(str.maketrans("０１２３４５６７８９．", "0123456789."))
+        try:
+            value = float(text)
+            value = int(value * 1000) / 1000.0 # 小数点以下第3位で切り捨て
+            if value > 1.0: value = 1.0
+            if value < 0.0: value = 0.0
+            panel_self.alpha_slider.setValue(int(value * 100))
+        except ValueError:
+            panel_self.alpha_value_edit.setText(f"{original_value:.3f}")
+    return handler
 
-def _on_dot_size_input_finished(self):
-    original_value = self.overlay.dot_radius * 2
-    text = self.dot_value_edit.text()
-    text = text.translate(str.maketrans("０１２３４５６７８９", "0123456789"))
-    try:
-        value = int(text)
-        if value > 100: value = 100
-        if value < 0: value = 0
-        self.dot_slider.setValue(value)
-    except ValueError:
-        self.dot_value_edit.setText(str(original_value))
+def _on_dot_size_input_finished(panel_self):
+    def handler():
+        original_value = panel_self.overlay.dot_radius * 2
+        text = panel_self.dot_value_edit.text()
+        text = text.translate(str.maketrans("０１２３４５６７８９", "0123456789"))
+        try:
+            value = int(text)
+            if value > panel_self.dot_slider.maximum(): value = panel_self.dot_slider.maximum()
+            if value < panel_self.dot_slider.minimum(): value = 0
+            panel_self.dot_slider.setValue(value)
+        except ValueError:
+            panel_self.dot_value_edit.setText(str(original_value))
+    return handler
 
-def _on_dot_alpha_input_finished(self):
-    original_value = self.overlay.dot_alpha
-    text = self.dot_alpha_value_edit.text()
-    text = text.translate(str.maketrans("０１２３４５６７８９．", "0123456789."))
-    try:
-        value = float(text)
-        value = int(value * 100) / 100.0
-        if value > 1.0: value = 1.0
-        if value < 0.0: value = 0.0
-        self.dot_alpha_slider.setValue(int(value * 100))
-    except ValueError:
-        self.dot_alpha_value_edit.setText(f"{original_value:.2f}")
+def _on_dot_alpha_input_finished(panel_self):
+    def handler():
+        original_value = panel_self.overlay.dot_alpha
+        text = panel_self.dot_alpha_value_edit.text()
+        text = text.translate(str.maketrans("０１２３４５６７８９．", "0123456789."))
+        try:
+            value = float(text)
+            value = int(value * 1000) / 1000.0 # 小数点以下第3位で切り捨て
+            if value > 1.0: value = 1.0
+            if value < 0.0: value = 0.0
+            panel_self.dot_alpha_slider.setValue(int(value * 100))
+        except ValueError:
+            panel_self.dot_alpha_value_edit.setText(f"{original_value:.3f}")
+    return handler
 
-def _on_dot_offset_x_input_finished(self):
-    original_value = self.overlay.dot_offset_x
-    text = self.dot_offset_x_edit.text()
-    text = text.translate(str.maketrans("０１２３４５６７８９－", "0123456789-"))
-    try:
-        value = int(text)
-        if value > 100: value = 100
-        if value < -100: value = -100
-        self.dot_offset_x_slider.setValue(value)
-        self.overlay.dot_offset_x = value
-        self.schedule_overlay_update()
-    except ValueError:
-        self.dot_offset_x_edit.setText(str(original_value))
+def _on_dot_offset_x_input_finished(panel_self):
+    def handler():
+        original_value = panel_self.overlay.dot_offset_x
+        text = panel_self.dot_offset_x_edit.text()
+        text = text.translate(str.maketrans("０１２３４５６７８９－", "0123456789-"))
+        try:
+            value = int(text)
+            if value > panel_self.dot_offset_x_slider.maximum(): value = panel_self.dot_offset_x_slider.maximum()
+            if value < panel_self.dot_offset_x_slider.minimum(): value = 0
+            
+            panel_self.dot_offset_x_slider.blockSignals(True)
+            panel_self.dot_offset_x_slider.setValue(value)
+            panel_self.dot_offset_x_slider.blockSignals(False)
 
-def _on_dot_offset_y_input_finished(self):
-    original_value = self.overlay.dot_offset_y
-    text = self.dot_offset_y_edit.text()
-    text = text.translate(str.maketrans("０１２３４５６７８９－", "0123456789-"))
-    try:
-        value = int(text)
-        if value > 100: value = 100
-        if value < -100: value = -100
-        self.dot_offset_y_slider.setValue(value)
-        self.overlay.dot_offset_y = value
-        self.schedule_overlay_update()
-    except ValueError:
-        self.dot_offset_y_edit.setText(str(original_value))
+            panel_self.overlay.dot_offset_x = value
+            panel_self.schedule_overlay_update()
+        except ValueError:
+            panel_self.dot_offset_x_edit.setText(str(original_value))
+    return handler
+
+def _on_dot_offset_y_input_finished(panel_self):
+    def handler():
+        original_value = panel_self.overlay.dot_offset_y
+        text = panel_self.dot_offset_y_edit.text()
+        text = text.translate(str.maketrans("０１２３４５６７８９－", "0123456789-"))
+        try:
+            value = int(text)
+            if value > panel_self.dot_offset_y_slider.maximum(): value = panel_self.dot_offset_y_slider.maximum()
+            if value < panel_self.dot_offset_y_slider.minimum(): value = 0
+
+            panel_self.dot_offset_y_slider.blockSignals(True)
+            panel_self.dot_offset_y_slider.setValue(value)
+            panel_self.dot_offset_y_slider.blockSignals(False)
+
+            panel_self.overlay.dot_offset_y = value
+            panel_self.schedule_overlay_update()
+        except ValueError:
+            panel_self.dot_offset_y_edit.setText(str(original_value))
+    return handler
+
+# --- Generic Handler Factory ---
+
+def _create_line_edit_handler(panel_self, edit_widget, slider, overlay_attr, is_float=False):
+    def handler():
+        original_value = getattr(panel_self.overlay, overlay_attr)
+        text = edit_widget.text()
+        text = text.translate(str.maketrans("０１２３４５６７８９．－", "0123456789.- "))
+        try:
+            value = float(text) if is_float else int(text)
+            if is_float:
+                value = int(value * 1000) / 1000.0
+                if value > 1.0: value = 1.0
+                if value < 0.0: value = 0.0
+                slider.setValue(int(value * 100))
+            else:
+                if value > slider.maximum(): value = slider.maximum()
+                if value < slider.minimum(): value = 0
+                slider.setValue(value)
+        except ValueError:
+            if is_float:
+                edit_widget.setText(f"{original_value:.3f}")
+            else:
+                edit_widget.setText(str(original_value))
+    return handler
+
 
 def update_crosshair_shape(self, shape_text):
     if shape_text == "新しく作る":
@@ -114,15 +158,15 @@ def update_dot_size(self, val):
     self.schedule_overlay_update()
 
 def update_alpha(self, val): 
-    alpha = round(val / 100, 2)
+    alpha = round(val / 100, 3)
     self.overlay.crosshair_alpha = alpha
-    self.alpha_value_edit.setText(f"{alpha:.2f}")
+    self.alpha_value_edit.setText(f"{alpha:.3f}")
     self.schedule_overlay_update()
 
 def update_dot_alpha(self, val): 
-    alpha = round(val / 100, 2)
+    alpha = round(val / 100, 3)
     self.overlay.dot_alpha = alpha
-    self.dot_alpha_value_edit.setText(f"{self.overlay.dot_alpha:.2f}")
+    self.dot_alpha_value_edit.setText(f"{self.overlay.dot_alpha:.3f}")
     self.schedule_overlay_update()
 
 def toggle_fade_on_shoot(self, checked):
@@ -204,42 +248,46 @@ def update_chevron_outline_enabled(self, checked):
 
 def update_chevron_outline_width(self, val):
     self.overlay.chevron_outline_width = val
-    self.chevron_outline_width_label.setText(f"{val}px")
+    self.chevron_outline_width_edit.setText(str(val))
     self.schedule_overlay_update()
 
 def update_chevron_thickness(self, val):
     self.overlay.chevron_thickness = val
-    self.chevron_thickness_label.setText(f"{val}px")
+    self.chevron_thickness_edit.setText(str(val))
     self.schedule_overlay_update()
 
 def update_chevron_length(self, val):
     self.overlay.chevron_length = val
-    self.chevron_length_label.setText(f"{val}px")
+    self.chevron_length_edit.setText(str(val))
     self.schedule_overlay_update()
 
 def update_image_crosshair_size(self, val):
     self.overlay.image_crosshair_size = val
-    self.image_crosshair_size_label.setText(f"{val}px")
+    self.image_crosshair_size_edit.setText(str(val))
     self.schedule_overlay_update()
 
 def update_crosshair_outline_alpha(self, val):
-    self.overlay.crosshair_outline_alpha = round(val / 100, 2)
-    self.crosshair_outline_alpha_label.setText(f"{val}%")
+    alpha = round(val / 100, 3)
+    self.overlay.crosshair_outline_alpha = alpha
+    self.crosshair_outline_alpha_edit.setText(f"{alpha:.3f}")
     self.schedule_overlay_update()
 
 def update_crosshair_inner_alpha(self, val):
-    self.overlay.crosshair_inner_alpha = round(val / 100, 2)
-    self.crosshair_inner_alpha_label.setText(f"{val}%")
+    alpha = round(val / 100, 3)
+    self.overlay.crosshair_inner_alpha = alpha
+    self.crosshair_inner_alpha_edit.setText(f"{alpha:.3f}")
     self.schedule_overlay_update()
 
 def update_circle_outline_alpha(self, val):
-    self.overlay.circle_outline_alpha = round(val / 100, 2)
-    self.circle_outline_alpha_label.setText(f"{val}%")
+    alpha = round(val / 100, 3)
+    self.overlay.circle_outline_alpha = alpha
+    self.circle_outline_alpha_edit.setText(f"{alpha:.3f}")
     self.schedule_overlay_update()
 
 def update_chevron_outline_alpha(self, val):
-    self.overlay.chevron_outline_alpha = round(val / 100, 2)
-    self.chevron_outline_alpha_label.setText(f"{val}%")
+    alpha = round(val / 100, 3)
+    self.overlay.chevron_outline_alpha = alpha
+    self.chevron_outline_alpha_edit.setText(f"{alpha:.3f}")
     self.schedule_overlay_update()
 
 def import_valorant_crosshair(self):

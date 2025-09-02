@@ -1,4 +1,3 @@
-
 import os
 import webbrowser
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -39,6 +38,7 @@ class ControlPanel(QtWidgets.QWidget):
         self._create_presets_group(main_layout)
         self._create_tab_widget(main_layout)
 
+        self._assign_handlers()
         self._connect_signals()
 
         self.reload_shapes()
@@ -102,6 +102,37 @@ class ControlPanel(QtWidgets.QWidget):
 
         parent_layout.addWidget(tab_widget)
 
+    def _assign_handlers(self):
+        # --- Event Handlers ---
+        self._on_alpha_input_finished = handlers._on_alpha_input_finished(self)
+        self._on_dot_size_input_finished = handlers._on_dot_size_input_finished(self)
+        self._on_dot_alpha_input_finished = handlers._on_dot_alpha_input_finished(self)
+        self._on_dot_offset_x_input_finished = handlers._on_dot_offset_x_input_finished(self)
+        self._on_dot_offset_y_input_finished = handlers._on_dot_offset_y_input_finished(self)
+
+        # --- New Handlers ---
+        self._on_outline_width_input_finished = handlers._create_line_edit_handler(self, self.outline_width_edit, self.outline_width_slider, 'crosshair_outline_width')
+        self._on_crosshair_outline_alpha_input_finished = handlers._create_line_edit_handler(self, self.crosshair_outline_alpha_edit, self.crosshair_outline_alpha_slider, 'crosshair_outline_alpha', is_float=True)
+        self._on_vline_length_input_finished = handlers._create_line_edit_handler(self, self.vline_length_edit, self.vline_length_slider, 'crosshair_vline_length')
+        self._on_hline_length_input_finished = handlers._create_line_edit_handler(self, self.hline_length_edit, self.hline_length_slider, 'crosshair_hline_length')
+        self._on_line_thickness_input_finished = handlers._create_line_edit_handler(self, self.line_thickness_edit, self.line_thickness_slider, 'crosshair_thickness')
+        self._on_crosshair_inner_alpha_input_finished = handlers._create_line_edit_handler(self, self.crosshair_inner_alpha_edit, self.crosshair_inner_alpha_slider, 'crosshair_inner_alpha', is_float=True)
+        self._on_gap_input_finished = handlers._create_line_edit_handler(self, self.gap_edit, self.gap_slider, 'crosshair_gap')
+        self._on_outer_vline_length_input_finished = handlers._create_line_edit_handler(self, self.outer_vline_length_edit, self.outer_vline_length_slider, 'outer_vline_length')
+        self._on_outer_hline_length_input_finished = handlers._create_line_edit_handler(self, self.outer_hline_length_edit, self.outer_hline_length_slider, 'outer_hline_length')
+        self._on_outer_line_alpha_input_finished = handlers._create_line_edit_handler(self, self.outer_line_alpha_edit, self.outer_line_alpha_slider, 'outer_line_alpha', is_float=True)
+        self._on_outer_line_thickness_input_finished = handlers._create_line_edit_handler(self, self.outer_line_thickness_edit, self.outer_line_thickness_slider, 'outer_line_thickness')
+        self._on_outer_gap_input_finished = handlers._create_line_edit_handler(self, self.outer_gap_edit, self.outer_gap_slider, 'outer_gap')
+        self._on_circle_outline_width_input_finished = handlers._create_line_edit_handler(self, self.circle_outline_width_edit, self.circle_outline_width_slider, 'circle_outline_width')
+        self._on_circle_outline_alpha_input_finished = handlers._create_line_edit_handler(self, self.circle_outline_alpha_edit, self.circle_outline_alpha_slider, 'circle_outline_alpha', is_float=True)
+        self._on_circle_thickness_input_finished = handlers._create_line_edit_handler(self, self.circle_thickness_edit, self.circle_thickness_slider, 'circle_thickness')
+        self._on_circle_diameter_input_finished = handlers._create_line_edit_handler(self, self.circle_diameter_edit, self.circle_diameter_slider, 'circle_diameter')
+        self._on_chevron_outline_width_input_finished = handlers._create_line_edit_handler(self, self.chevron_outline_width_edit, self.chevron_outline_width_slider, 'chevron_outline_width')
+        self._on_chevron_outline_alpha_input_finished = handlers._create_line_edit_handler(self, self.chevron_outline_alpha_edit, self.chevron_outline_alpha_slider, 'chevron_outline_alpha', is_float=True)
+        self._on_chevron_thickness_input_finished = handlers._create_line_edit_handler(self, self.chevron_thickness_edit, self.chevron_thickness_slider, 'chevron_thickness')
+        self._on_chevron_length_input_finished = handlers._create_line_edit_handler(self, self.chevron_length_edit, self.chevron_length_slider, 'chevron_length')
+        self._on_image_crosshair_size_input_finished = handlers._create_line_edit_handler(self, self.image_crosshair_size_edit, self.image_crosshair_size_slider, 'image_crosshair_size')
+
     def _connect_signals(self):
         self.master_toggle_btn.clicked.connect(self.toggle_master_visibility)
         self.preset_box.currentIndexChanged.connect(self.load_selected_preset)
@@ -113,6 +144,32 @@ class ControlPanel(QtWidgets.QWidget):
         self.alpha_value_edit.editingFinished.connect(self._on_alpha_input_finished)
         self.dot_value_edit.editingFinished.connect(self._on_dot_size_input_finished)
         self.dot_alpha_value_edit.editingFinished.connect(self._on_dot_alpha_input_finished)
+        self.dot_offset_x_edit.editingFinished.connect(self._on_dot_offset_x_input_finished)
+        self.dot_offset_y_edit.editingFinished.connect(self._on_dot_offset_y_input_finished)
+
+        # Connect new QLineEdit signals
+        self.outline_width_edit.editingFinished.connect(self._on_outline_width_input_finished)
+        self.crosshair_outline_alpha_edit.editingFinished.connect(self._on_crosshair_outline_alpha_input_finished)
+        self.vline_length_edit.editingFinished.connect(self._on_vline_length_input_finished)
+        self.hline_length_edit.editingFinished.connect(self._on_hline_length_input_finished)
+        self.line_thickness_edit.editingFinished.connect(self._on_line_thickness_input_finished)
+        self.crosshair_inner_alpha_edit.editingFinished.connect(self._on_crosshair_inner_alpha_input_finished)
+        self.gap_edit.editingFinished.connect(self._on_gap_input_finished)
+        self.outer_vline_length_edit.editingFinished.connect(self._on_outer_vline_length_input_finished)
+        self.outer_hline_length_edit.editingFinished.connect(self._on_outer_hline_length_input_finished)
+        self.outer_line_alpha_edit.editingFinished.connect(self._on_outer_line_alpha_input_finished)
+        self.outer_line_thickness_edit.editingFinished.connect(self._on_outer_line_thickness_input_finished)
+        self.outer_gap_edit.editingFinished.connect(self._on_outer_gap_input_finished)
+        self.circle_outline_width_edit.editingFinished.connect(self._on_circle_outline_width_input_finished)
+        self.circle_outline_alpha_edit.editingFinished.connect(self._on_circle_outline_alpha_input_finished)
+        self.circle_thickness_edit.editingFinished.connect(self._on_circle_thickness_input_finished)
+        self.circle_diameter_edit.editingFinished.connect(self._on_circle_diameter_input_finished)
+        self.chevron_outline_width_edit.editingFinished.connect(self._on_chevron_outline_width_input_finished)
+        self.chevron_outline_alpha_edit.editingFinished.connect(self._on_chevron_outline_alpha_input_finished)
+        self.chevron_thickness_edit.editingFinished.connect(self._on_chevron_thickness_input_finished)
+        self.chevron_length_edit.editingFinished.connect(self._on_chevron_length_input_finished)
+        self.image_crosshair_size_edit.editingFinished.connect(self._on_image_crosshair_size_input_finished)
+
 
     # --- Method Assignments from Imported Logic ---
     # Presets
@@ -147,12 +204,6 @@ class ControlPanel(QtWidgets.QWidget):
     update_dot_offset_y = updates.update_dot_offset_y
 
     # --- Event Handlers ---
-        # Event Handlers
-    _on_alpha_input_finished = handlers._on_alpha_input_finished
-    _on_dot_size_input_finished = handlers._on_dot_size_input_finished
-    _on_dot_alpha_input_finished = handlers._on_dot_alpha_input_finished
-    _on_dot_offset_x_input_finished = handlers._on_dot_offset_x_input_finished
-    _on_dot_offset_y_input_finished = handlers._on_dot_offset_y_input_finished
     update_crosshair_shape = handlers.update_crosshair_shape
     select_custom_image = handlers.select_custom_image
     toggle_crosshair_button = handlers.toggle_crosshair_button
@@ -272,7 +323,7 @@ class ControlPanel(QtWidgets.QWidget):
             ''')
             color_button.setText(color_hex.upper())
             qcolor = QtGui.QColor(color_hex)
-            color_button.setStyleSheet(color_button.styleSheet() + f"QPushButton {{ color: {'#000000' if qcolor.lightness() > 127 else '#ffffff'}; font-weight: bold; }}")
+            color_button.setStyleSheet(color_button.styleSheet() + f"QPushButton {{ color: {{'#000000' if qcolor.lightness() > 127 else '#ffffff'}}; font-weight: bold; }}")
         color_button.update_color = update_color
         def pick_color():
             color = QtWidgets.QColorDialog.getColor(QtGui.QColor(getter()), self, "色を選択")

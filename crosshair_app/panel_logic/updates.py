@@ -1,5 +1,3 @@
-
-
 def update_control_panel_ui(self):
     # --- Block Signals ---
     self.monitor_selection_box.blockSignals(True)
@@ -91,7 +89,7 @@ def update_control_panel_ui(self):
     self.dot_out_color_square.update_color(self.overlay.dot_outer_color)
     self.dot_in_color_square.update_color(self.overlay.dot_inner_color)
     self.dot_alpha_slider.setValue(int(self.overlay.dot_alpha * 100))
-    self.dot_alpha_value_edit.setText(f"{self.overlay.dot_alpha:.2f}")
+    self.dot_alpha_value_edit.setText(f"{self.overlay.dot_alpha:.3f}")
     if hasattr(self, 'dot_offset_x_slider'):
         self.dot_offset_x_slider.setValue(self.overlay.dot_offset_x)
         self.dot_offset_y_slider.setValue(self.overlay.dot_offset_y)
@@ -101,7 +99,7 @@ def update_control_panel_ui(self):
     # Crosshair common settings
     self.ch_color_square.update_color(self.overlay.crosshair_color)
     self.alpha_slider.setValue(int(self.overlay.crosshair_alpha * 100))
-    self.alpha_value_edit.setText(f"{self.overlay.crosshair_alpha:.2f}")
+    self.alpha_value_edit.setText(f"{self.overlay.crosshair_alpha:.3f}")
     self.fade_on_shoot_checkbox.setChecked(self.overlay.fade_on_shoot_enabled)
 
     # Cross advanced settings
@@ -112,15 +110,15 @@ def update_control_panel_ui(self):
         self.hline_length_slider.setValue(self.overlay.crosshair_hline_length)
         self.line_thickness_slider.setValue(self.overlay.crosshair_thickness)
         self.gap_slider.setValue(self.overlay.crosshair_gap)
-        self.outline_width_label.setText(f"{self.overlay.crosshair_outline_width}px")
-        self.vline_length_label.setText(f"{self.overlay.crosshair_vline_length}px")
-        self.hline_length_label.setText(f"{self.overlay.crosshair_hline_length}px")
-        self.line_thickness_label.setText(f"{self.overlay.crosshair_thickness}px")
-        self.gap_label.setText(f"{self.overlay.crosshair_gap}px")
+        self.outline_width_edit.setText(str(self.overlay.crosshair_outline_width))
+        self.vline_length_edit.setText(str(self.overlay.crosshair_vline_length))
+        self.hline_length_edit.setText(str(self.overlay.crosshair_hline_length))
+        self.line_thickness_edit.setText(str(self.overlay.crosshair_thickness))
+        self.gap_edit.setText(str(self.overlay.crosshair_gap))
         self.crosshair_outline_alpha_slider.setValue(int(self.overlay.crosshair_outline_alpha * 100))
-        self.crosshair_outline_alpha_label.setText(f"{int(self.overlay.crosshair_outline_alpha * 100)}%")
+        self.crosshair_outline_alpha_edit.setText(f"{self.overlay.crosshair_outline_alpha:.3f}")
         self.crosshair_inner_alpha_slider.setValue(int(self.overlay.crosshair_inner_alpha * 100))
-        self.crosshair_inner_alpha_label.setText(f"{int(self.overlay.crosshair_inner_alpha * 100)}%")
+        self.crosshair_inner_alpha_edit.setText(f"{self.overlay.crosshair_inner_alpha:.3f}")
         # --- Outer Crosshair ---
         self.outer_line_btn.setChecked(self.overlay.outer_line_enabled)
         self.outer_vline_length_slider.setValue(self.overlay.outer_vline_length)
@@ -128,11 +126,11 @@ def update_control_panel_ui(self):
         self.outer_line_alpha_slider.setValue(int(self.overlay.outer_line_alpha * 100))
         self.outer_line_thickness_slider.setValue(self.overlay.outer_line_thickness)
         self.outer_gap_slider.setValue(self.overlay.outer_gap)
-        self.outer_vline_length_label.setText(f"{self.overlay.outer_vline_length}px")
-        self.outer_hline_length_label.setText(f"{self.overlay.outer_hline_length}px")
-        self.outer_line_alpha_label.setText(f"{int(self.overlay.outer_line_alpha * 100)}%")
-        self.outer_line_thickness_label.setText(f"{self.overlay.outer_line_thickness}px")
-        self.outer_gap_label.setText(f"{self.overlay.outer_gap}px")
+        self.outer_vline_length_edit.setText(str(self.overlay.outer_vline_length))
+        self.outer_hline_length_edit.setText(str(self.overlay.outer_hline_length))
+        self.outer_line_alpha_edit.setText(f"{self.overlay.outer_line_alpha:.3f}")
+        self.outer_line_thickness_edit.setText(str(self.overlay.outer_line_thickness))
+        self.outer_gap_edit.setText(str(self.overlay.outer_gap))
 
     # Circle advanced settings
     if is_circle_shape:
@@ -140,11 +138,11 @@ def update_control_panel_ui(self):
         self.circle_outline_width_slider.setValue(self.overlay.circle_outline_width)
         self.circle_thickness_slider.setValue(self.overlay.circle_thickness)
         self.circle_diameter_slider.setValue(self.overlay.circle_diameter)
-        self.circle_outline_width_label.setText(f"{self.overlay.circle_outline_width}px")
-        self.circle_thickness_label.setText(f"{self.overlay.circle_thickness}px")
-        self.circle_diameter_label.setText(f"{self.overlay.circle_diameter}px")
+        self.circle_outline_width_edit.setText(str(self.overlay.circle_outline_width))
+        self.circle_thickness_edit.setText(str(self.overlay.circle_thickness))
+        self.circle_diameter_edit.setText(str(self.overlay.circle_diameter))
         self.circle_outline_alpha_slider.setValue(int(self.overlay.circle_outline_alpha * 100))
-        self.circle_outline_alpha_label.setText(f"{int(self.overlay.circle_outline_alpha * 100)}%")
+        self.circle_outline_alpha_edit.setText(f"{self.overlay.circle_outline_alpha:.3f}")
 
     # Chevron advanced settings
     if is_chevron_shape:
@@ -152,16 +150,16 @@ def update_control_panel_ui(self):
         self.chevron_outline_width_slider.setValue(self.overlay.chevron_outline_width)
         self.chevron_thickness_slider.setValue(self.overlay.chevron_thickness)
         self.chevron_length_slider.setValue(self.overlay.chevron_length)
-        self.chevron_outline_width_label.setText(f"{self.overlay.chevron_outline_width}px")
-        self.chevron_thickness_label.setText(f"{self.overlay.chevron_thickness}px")
-        self.chevron_length_label.setText(f"{self.overlay.chevron_length}px")
+        self.chevron_outline_width_edit.setText(str(self.overlay.chevron_outline_width))
+        self.chevron_thickness_edit.setText(str(self.overlay.chevron_thickness))
+        self.chevron_length_edit.setText(str(self.overlay.chevron_length))
         self.chevron_outline_alpha_slider.setValue(int(self.overlay.chevron_outline_alpha * 100))
-        self.chevron_outline_alpha_label.setText(f"{int(self.overlay.chevron_outline_alpha * 100)}%")
+        self.chevron_outline_alpha_edit.setText(f"{self.overlay.chevron_outline_alpha:.3f}")
 
     # Image crosshair settings
     if is_image_crosshair_shape:
         self.image_crosshair_size_slider.setValue(self.overlay.image_crosshair_size)
-        self.image_crosshair_size_label.setText(f"{self.overlay.image_crosshair_size}px")
+        self.image_crosshair_size_edit.setText(str(self.overlay.image_crosshair_size))
 
     # Keys settings
     self.disabled_keys_label.setText(", ".join(self.overlay.disabled_keys) if self.overlay.disabled_keys else "なし")
@@ -216,27 +214,27 @@ def update_outline_enabled(self, checked):
 
 def update_outline_width(self, val):
     self.overlay.crosshair_outline_width = val
-    self.outline_width_label.setText(f"{val}px")
+    self.outline_width_edit.setText(str(val))
     self.schedule_overlay_update()
 
 def update_vline_length(self, val):
     self.overlay.crosshair_vline_length = val
-    self.vline_length_label.setText(f"{val}px")
+    self.vline_length_edit.setText(str(val))
     self.schedule_overlay_update()
 
 def update_hline_length(self, val):
     self.overlay.crosshair_hline_length = val
-    self.hline_length_label.setText(f"{val}px")
+    self.hline_length_edit.setText(str(val))
     self.schedule_overlay_update()
 
 def update_line_thickness(self, val):
     self.overlay.crosshair_thickness = val
-    self.line_thickness_label.setText(f"{val}px")
+    self.line_thickness_edit.setText(str(val))
     self.schedule_overlay_update()
 
 def update_gap(self, val):
     self.overlay.crosshair_gap = val
-    self.gap_label.setText(f"{val}px")
+    self.gap_edit.setText(str(val))
     self.schedule_overlay_update()
 
 def update_circle_outline_enabled(self, checked):
@@ -245,17 +243,17 @@ def update_circle_outline_enabled(self, checked):
 
 def update_circle_outline_width(self, val):
     self.overlay.circle_outline_width = val
-    self.circle_outline_width_label.setText(f"{val}px")
+    self.circle_outline_width_edit.setText(str(val))
     self.schedule_overlay_update()
 
 def update_circle_thickness(self, val):
     self.overlay.circle_thickness = val
-    self.circle_thickness_label.setText(f"{val}px")
+    self.circle_thickness_edit.setText(str(val))
     self.schedule_overlay_update()
 
 def update_circle_diameter(self, val):
     self.overlay.circle_diameter = val
-    self.circle_diameter_label.setText(f"{val}px")
+    self.circle_diameter_edit.setText(str(val))
     self.schedule_overlay_update()
 
 def update_drawing_order(self, index):
@@ -272,28 +270,28 @@ def update_outer_line_enabled(self, checked):
 
 def update_outer_vline_length(self, val):
     self.overlay.outer_vline_length = val
-    self.outer_vline_length_label.setText(f"{val}px")
+    self.outer_vline_length_edit.setText(str(val))
     self.schedule_overlay_update()
 
 def update_outer_hline_length(self, val):
     self.overlay.outer_hline_length = val
-    self.outer_hline_length_label.setText(f"{val}px")
+    self.outer_hline_length_edit.setText(str(val))
     self.schedule_overlay_update()
 
 def update_outer_line_alpha(self, val):
     alpha = val / 100.0
     self.overlay.outer_line_alpha = alpha
-    self.outer_line_alpha_label.setText(f"{val}%")
+    self.outer_line_alpha_edit.setText(f"{alpha:.3f}")
     self.schedule_overlay_update()
 
 def update_outer_line_thickness(self, val):
     self.overlay.outer_line_thickness = val
-    self.outer_line_thickness_label.setText(f"{val}px")
+    self.outer_line_thickness_edit.setText(str(val))
     self.schedule_overlay_update()
 
 def update_outer_gap(self, val):
     self.overlay.outer_gap = val
-    self.outer_gap_label.setText(f"{val}px")
+    self.outer_gap_edit.setText(str(val))
     self.schedule_overlay_update()
 
 def update_dot_offset_x(self, val):
