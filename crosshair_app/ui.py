@@ -36,7 +36,7 @@ class ControlPanel(QtWidgets.QWidget):
         self._create_menu_bar(main_layout)
         self._create_master_toggle(main_layout)
         self._create_presets_group(main_layout)
-        self._create_tab_widget(main_layout)
+        self._create_main_view(main_layout)
 
         self._assign_handlers()
         self._connect_signals()
@@ -80,27 +80,63 @@ class ControlPanel(QtWidgets.QWidget):
         presets_group = QtWidgets.QGroupBox("プリセット")
         presets_layout = QtWidgets.QHBoxLayout(presets_group)
         self.preset_box = QtWidgets.QComboBox()
-        self.save_btn = QtWidgets.QPushButton("保存")
+        self.save_btn = QtWidgets.QPushButton("プリセットを保存")
         self.save_btn.setProperty("accent", True)
         presets_layout.addWidget(self.preset_box, 1)
         presets_layout.addWidget(self.save_btn)
         parent_layout.addWidget(presets_group)
 
-    def _create_tab_widget(self, parent_layout):
-        tab_widget = QtWidgets.QTabWidget()
-        tab_widget.setObjectName("settingsTab")
+    def _create_main_view(self, parent_layout):
+        main_view_layout = QtWidgets.QHBoxLayout()
+        main_view_layout.setSpacing(0)
+        main_view_layout.setContentsMargins(0, 10, 0, 0)
+
+        # --- Navigation ---
+        self.nav_list = QtWidgets.QListWidget()
+        self.nav_list.setObjectName("navigationList")
+        self.nav_list.setFixedWidth(120)
+        main_view_layout.addWidget(self.nav_list)
+
+        # --- Separator ---
+        separator = QtWidgets.QFrame()
+        separator.setFrameShape(QtWidgets.QFrame.VLine)
+        separator.setFrameShadow(QtWidgets.QFrame.Sunken)
+        separator.setObjectName("navigationSeparator")
+        main_view_layout.addWidget(separator)
+
+        # --- Pages ---
+        self.pages_widget = QtWidgets.QStackedWidget()
+        self.pages_widget.setObjectName("pagesWidget")
         
+        # Use a container for the pages to manage margins correctly
+        pages_container = QtWidgets.QWidget()
+        pages_layout = QtWidgets.QVBoxLayout(pages_container)
+        pages_layout.setContentsMargins(15, 0, 15, 0)
+        pages_layout.addWidget(self.pages_widget)
+        main_view_layout.addWidget(pages_container, 1) # Add container, set stretch factor
+
+        # --- Create and add pages ---
         general_tab = tab_general.create_tab(self)
         ch_tab = tab_crosshair.create_tab(self)
         dot_tab = tab_dot.create_tab(self)
         keys_tab = tab_keys.create_tab(self)
 
-        tab_widget.addTab(general_tab, "全般")
-        tab_widget.addTab(ch_tab, "クロスヘア")
-        tab_widget.addTab(dot_tab, "ドット")
-        tab_widget.addTab(keys_tab, "キー無効化")
+        self.pages_widget.addWidget(general_tab)
+        self.pages_widget.addWidget(ch_tab)
+        self.pages_widget.addWidget(dot_tab)
+        self.pages_widget.addWidget(keys_tab)
 
-        parent_layout.addWidget(tab_widget)
+        # --- Add items to navigation ---
+        self.nav_list.addItem(QtWidgets.QListWidgetItem(" 全般"))
+        self.nav_list.addItem(QtWidgets.QListWidgetItem(" クロスヘア"))
+        self.nav_list.addItem(QtWidgets.QListWidgetItem(" ドット"))
+        self.nav_list.addItem(QtWidgets.QListWidgetItem(" キー無効化"))
+        
+        # --- Connect navigation ---
+        self.nav_list.currentRowChanged.connect(self.pages_widget.setCurrentIndex)
+        self.nav_list.setCurrentRow(0)
+
+        parent_layout.addLayout(main_view_layout)
 
     def _assign_handlers(self):
         # --- Event Handlers ---
@@ -310,12 +346,16 @@ class ControlPanel(QtWidgets.QWidget):
         current_hotkey = self.overlay.toggle_hotkey
         self.hotkey_action.setText(f"ショートカットキー設定... ({current_hotkey})")
 
-    def make_color_button(self, label_text, getter, setter, update_callback):
-        layout_ = QtWidgets.QHBoxLayout()
-        label = QtWidgets.QLabel(label_text)
-        color_button = QtWidgets.QPushButton()
+    def make_color_button(self, label_text, getter, setter, update_callback, parent=None):
+        container = QtWidgets.QWidget(parent)
+        layout_ = QtWidgets.QHBoxLayout(container)
+        layout_.setContentsMargins(0, 0, 0, 0)
+
+        label = QtWidgets.QLabel(label_text, container)
+        color_button = QtWidgets.QPushButton(container)
         color_button.setFixedSize(90, 28)
         color_button.setToolTip("クリックして色を選択")
+        
         def update_color(color_hex):
             color_button.setStyleSheet(f'''
                 QPushButton {{ background-color: {color_hex}; border: 1px solid #4d4d4d; border-radius: 4px; }}
@@ -324,7 +364,9 @@ class ControlPanel(QtWidgets.QWidget):
             color_button.setText(color_hex.upper())
             qcolor = QtGui.QColor(color_hex)
             color_button.setStyleSheet(color_button.styleSheet() + f"QPushButton {{ color: {{'#000000' if qcolor.lightness() > 127 else '#ffffff'}}; font-weight: bold; }}")
+        
         color_button.update_color = update_color
+        
         def pick_color():
             color = QtWidgets.QColorDialog.getColor(QtGui.QColor(getter()), self, "色を選択")
             if color.isValid():
@@ -332,12 +374,15 @@ class ControlPanel(QtWidgets.QWidget):
                 color_button.update_color(color.name())
                 update_callback()
                 self.schedule_overlay_update()
+        
         color_button.clicked.connect(pick_color)
         color_button.update_color(getter())
+        
         layout_.addWidget(label)
         layout_.addStretch()
         layout_.addWidget(color_button)
-        return layout_, color_button
+        
+        return container, color_button
 
     def set_master_enabled(self, enabled, manual_toggle=False):
         self.overlay.set_master_enabled(enabled, manual_toggle)

@@ -35,10 +35,10 @@ def create_tab(panel):
     dotsize_layout.addWidget(panel.dot_value_edit)
     dot_layout.addLayout(dotsize_layout)
 
-    dot_out_color_layout, panel.dot_out_color_square = panel.make_color_button("外枠の色:", lambda: panel.overlay.dot_outer_color, panel.set_dot_outer_color, lambda: panel.overlay.update())
-    dot_in_color_layout, panel.dot_in_color_square = panel.make_color_button("内側の色:", lambda: panel.overlay.dot_inner_color, panel.set_dot_inner_color, lambda: panel.overlay.update())
-    dot_layout.addLayout(dot_out_color_layout)
-    dot_layout.addLayout(dot_in_color_layout)
+    dot_out_color_container, panel.dot_out_color_square = panel.make_color_button("外枠の色:", lambda: panel.overlay.dot_outer_color, panel.set_dot_outer_color, lambda: panel.overlay.update(), parent=dot_tab)
+    dot_in_color_container, panel.dot_in_color_square = panel.make_color_button("内側の色:", lambda: panel.overlay.dot_inner_color, panel.set_dot_inner_color, lambda: panel.overlay.update(), parent=dot_tab)
+    dot_layout.addWidget(dot_out_color_container)
+    dot_layout.addWidget(dot_in_color_container)
 
     dot_alpha_layout = QtWidgets.QHBoxLayout()
     panel.dot_alpha_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)

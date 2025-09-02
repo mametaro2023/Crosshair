@@ -257,14 +257,134 @@ def create_tab(panel):
     chevron_advanced_layout.addRow("線の太さ:", chevron_thickness_layout)
 
     panel.chevron_length_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-    panel.chevron_length_slider.setRange(1, 40)
-    panel.chevron_length_slider.valueChanged.connect(panel.update_chevron_length)
-    panel.chevron_length_edit = QtWidgets.QLineEdit()
-    panel.chevron_length_edit.setFixedWidth(45)
-    chevron_length_layout = QtWidgets.QHBoxLayout()
-    chevron_length_layout.addWidget(panel.chevron_length_slider)
-    chevron_length_layout.addWidget(panel.chevron_length_edit)
-    chevron_advanced_layout.addRow("線の長さ:", chevron_length_layout)
+    from PyQt5 import QtCore, QtWidgets
+from .collapsible_section import CollapsibleSection
+
+def create_tab(panel):
+    """「クロスヘア」タブを生成する (修正版)"""
+    ch_tab = QtWidgets.QWidget()
+    main_layout = QtWidgets.QVBoxLayout(ch_tab)
+    main_layout.setContentsMargins(0, 10, 0, 10)
+    main_layout.setSpacing(8)
+
+    def _create_slider_row(parent_widget, target_panel, name, range_tuple, update_func):
+        container = QtWidgets.QWidget(parent_widget)
+        slider = QtWidgets.QSlider(QtCore.Qt.Horizontal, container)
+        slider.setRange(*range_tuple)
+        edit = QtWidgets.QLineEdit(container)
+        edit.setFixedWidth(45)
+        layout = QtWidgets.QHBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(slider)
+        layout.addWidget(edit)
+        slider.valueChanged.connect(update_func)
+        setattr(target_panel, f"{name}_slider", slider)
+        setattr(target_panel, f"{name}_edit", edit)
+        return container
+
+    panel.crosshair_btn = QtWidgets.QCheckBox("クロスヘアを表示", ch_tab)
+    panel.crosshair_btn.toggled.connect(panel.toggle_crosshair_button)
+    main_layout.addWidget(panel.crosshair_btn)
+
+    # --- Sections ---
+    shape_section = CollapsibleSection("形状", parent=ch_tab)
+    general_section = CollapsibleSection("基本スタイル", parent=ch_tab)
+    panel.cross_settings_widget = CollapsibleSection("十字線", parent=ch_tab, expanded=False)
+    panel.outer_lines_section = CollapsibleSection("外枠 (十字線用)", parent=ch_tab, expanded=False)
+    panel.circle_settings_widget = CollapsibleSection("円", parent=ch_tab, expanded=False)
+    panel.chevron_settings_widget = CollapsibleSection("矢印 (シェブロン)", parent=ch_tab, expanded=False)
+    panel.image_settings_widget = CollapsibleSection("画像", parent=ch_tab, expanded=False)
+
+    # --- Shape Section Layout ---
+    shape_layout = QtWidgets.QFormLayout()
+    shape_section.set_content_layout(shape_layout)
+    panel.shape_box = QtWidgets.QComboBox()
+    shape_layout.addRow("形状:", panel.shape_box)
+    panel.custom_image_widget, _ = panel.make_color_button("画像を選択...", lambda:"", lambda x:panel.select_custom_image(), lambda:None, parent=shape_section.content_area)
+    panel.custom_image_path_label = panel.custom_image_widget.findChild(QtWidgets.QLabel)
+    panel.custom_image_path_label.setText("選択されていません")
+    select_btn = panel.custom_image_widget.findChild(QtWidgets.QPushButton)
+    select_btn.setText("画像を選択...")
+    shape_layout.addRow(panel.custom_image_widget)
+
+    # --- General Style Section Layout ---
+    general_layout = QtWidgets.QFormLayout()
+    general_section.set_content_layout(general_layout)
+    panel.ch_color_widget, panel.ch_color_square = panel.make_color_button("色:", lambda: panel.overlay.crosshair_color, panel.set_crosshair_color, lambda: panel.overlay.update(), parent=general_section.content_area)
+    general_layout.addRow(panel.ch_color_widget)
+    panel.alpha_value_edit = QtWidgets.QLineEdit()
+    general_layout.addRow("透明度:", _create_slider_row(general_section.content_area, panel, "alpha_value", (0, 100), panel.update_alpha))
+    panel.antialiasing_checkbox = QtWidgets.QCheckBox("アンチエイリアシング")
+    panel.antialiasing_checkbox.toggled.connect(panel.toggle_antialiasing)
+    general_layout.addRow(panel.antialiasing_checkbox)
+
+    # --- Cross Lines Section Layout ---
+    cross_layout = QtWidgets.QFormLayout()
+    panel.cross_settings_widget.set_content_layout(cross_layout)
+    cross_layout.addRow("縦線の長さ:", _create_slider_row(panel.cross_settings_widget.content_area, panel, "vline_length", (0, 50), panel.update_vline_length))
+    cross_layout.addRow("横線の長さ:", _create_slider_row(panel.cross_settings_widget.content_area, panel, "hline_length", (0, 50), panel.update_hline_length))
+    cross_layout.addRow("線の太さ:", _create_slider_row(panel.cross_settings_widget.content_area, panel, "line_thickness", (0, 20), panel.update_line_thickness))
+    cross_layout.addRow("ギャップ:", _create_slider_row(panel.cross_settings_widget.content_area, panel, "gap", (0, 50), panel.update_gap))
+    cross_layout.addRow("内側の透明度:", _create_slider_row(panel.cross_settings_widget.content_area, panel, "crosshair_inner_alpha", (0, 100), panel.update_crosshair_inner_alpha))
+    panel.outline_btn = QtWidgets.QCheckBox("輪郭")
+    panel.outline_btn.toggled.connect(panel.update_outline_enabled)
+    cross_layout.addRow(panel.outline_btn)
+    cross_layout.addRow("輪郭の太さ:", _create_slider_row(panel.cross_settings_widget.content_area, panel, "outline_width", (1, 10), panel.update_outline_width))
+    cross_layout.addRow("輪郭の透明度:", _create_slider_row(panel.cross_settings_widget.content_area, panel, "crosshair_outline_alpha", (0, 100), panel.update_crosshair_outline_alpha))
+
+    # --- Outer Lines Section Layout ---
+    outer_layout = QtWidgets.QFormLayout()
+    panel.outer_lines_section.set_content_layout(outer_layout)
+    panel.outer_line_btn = QtWidgets.QCheckBox("外枠を表示")
+    panel.outer_line_btn.toggled.connect(panel.update_outer_line_enabled)
+    outer_layout.addRow(panel.outer_line_btn)
+    outer_layout.addRow("外枠の縦線:", _create_slider_row(panel.outer_lines_section.content_area, panel, "outer_vline_length", (0, 50), panel.update_outer_vline_length))
+    outer_layout.addRow("外枠の横線:", _create_slider_row(panel.outer_lines_section.content_area, panel, "outer_hline_length", (0, 50), panel.update_outer_hline_length))
+    outer_layout.addRow("外枠の太さ:", _create_slider_row(panel.outer_lines_section.content_area, panel, "outer_line_thickness", (0, 20), panel.update_outer_line_thickness))
+    outer_layout.addRow("外枠のギャップ:", _create_slider_row(panel.outer_lines_section.content_area, panel, "outer_gap", (0, 50), panel.update_outer_gap))
+    outer_layout.addRow("外枠の透明度:", _create_slider_row(panel.outer_lines_section.content_area, panel, "outer_line_alpha", (0, 100), panel.update_outer_line_alpha))
+
+    # --- Circle Section Layout ---
+    circle_layout = QtWidgets.QFormLayout()
+    panel.circle_settings_widget.set_content_layout(circle_layout)
+    circle_layout.addRow("直径:", _create_slider_row(panel.circle_settings_widget.content_area, panel, "circle_diameter", (0, 100), panel.update_circle_diameter))
+    circle_layout.addRow("線の太さ:", _create_slider_row(panel.circle_settings_widget.content_area, panel, "circle_thickness", (0, 20), panel.update_circle_thickness))
+    panel.circle_outline_btn = QtWidgets.QCheckBox("輪郭")
+    panel.circle_outline_btn.toggled.connect(panel.update_circle_outline_enabled)
+    circle_layout.addRow(panel.circle_outline_btn)
+    circle_layout.addRow("輪郭の太さ:", _create_slider_row(panel.circle_settings_widget.content_area, panel, "circle_outline_width", (1, 10), panel.update_circle_outline_width))
+    circle_layout.addRow("輪郭の透明度:", _create_slider_row(panel.circle_settings_widget.content_area, panel, "circle_outline_alpha", (0, 100), panel.update_circle_outline_alpha))
+
+    # --- Chevron Section Layout ---
+    chevron_layout = QtWidgets.QFormLayout()
+    panel.chevron_settings_widget.set_content_layout(chevron_layout)
+    chevron_layout.addRow("線の長さ:", _create_slider_row(panel.chevron_settings_widget.content_area, panel, "chevron_length", (1, 40), panel.update_chevron_length))
+    chevron_layout.addRow("線の太さ:", _create_slider_row(panel.chevron_settings_widget.content_area, panel, "chevron_thickness", (0, 20), panel.update_chevron_thickness))
+    panel.chevron_outline_btn = QtWidgets.QCheckBox("輪郭")
+    panel.chevron_outline_btn.toggled.connect(panel.update_chevron_outline_enabled)
+    chevron_layout.addRow(panel.chevron_outline_btn)
+    chevron_layout.addRow("輪郭の太さ:", _create_slider_row(panel.chevron_settings_widget.content_area, panel, "chevron_outline_width", (1, 10), panel.update_chevron_outline_width))
+    chevron_layout.addRow("輪郭の透明度:", _create_slider_row(panel.chevron_settings_widget.content_area, panel, "chevron_outline_alpha", (0, 100), panel.update_chevron_outline_alpha))
+
+    # --- Image Section Layout ---
+    image_layout = QtWidgets.QFormLayout()
+    panel.image_settings_widget.set_content_layout(image_layout)
+    image_layout.addRow("リサイズ:", _create_slider_row(panel.image_settings_widget.content_area, panel, "image_crosshair_size", (0, 100), panel.update_image_crosshair_size))
+
+    # --- Add sections to main layout ---
+    main_layout.addWidget(shape_section)
+    main_layout.addWidget(general_section)
+    main_layout.addWidget(panel.cross_settings_widget)
+    main_layout.addWidget(panel.outer_lines_section)
+    main_layout.addWidget(panel.circle_settings_widget)
+    main_layout.addWidget(panel.chevron_settings_widget)
+    main_layout.addWidget(panel.image_settings_widget)
+    main_layout.addStretch()
+
+    panel.shape_box.currentTextChanged.connect(panel.update_crosshair_shape)
+
+    return ch_tab
+
 
     advanced_container_layout.addWidget(panel.chevron_settings_widget)
 

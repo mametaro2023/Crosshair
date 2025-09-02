@@ -178,25 +178,57 @@ def apply_modern_dark_theme(app: QtWidgets.QApplication) -> None:
             background-color: transparent;
         }
 
-        /* タブウィジェット */
-        QTabWidget::pane {
-            border-top: 1px solid #3c3c3c;
+        /* --- Navigation --- */
+        QListWidget#navigationList {
+            border: none;
+            background-color: #2d2d2d;
+            outline: 0px;
         }
-        QTabBar::tab {
-            background: #2d2d2d;
-            border: 1px solid #3c3c3c;
-            border-bottom: none;
-            padding: 8px 20px;
+        QListWidget#navigationList::item {
+            padding: 12px 10px;
+            border-radius: 4px;
             font-weight: bold;
             color: #a0a0a0;
         }
-        QTabBar::tab:selected {
-            background: #1e1e1e;
-            border-color: #3c3c3c;
-            border-bottom-color: #1e1e1e; /* paneのtop-borderと重なる部分を隠す */
+        QListWidget#navigationList::item:hover {
+            background-color: #3c3c3c;
+        }
+        QListWidget#navigationList::item:selected {
+            background-color: #007acc;
             color: #ffffff;
         }
-        QTabBar::tab:!selected:hover {
-            background: #3c3c3c;
+
+        /* --- Pages Widget */
+        #pagesWidget {
+            background-color: transparent;
+        }
+
+        /* --- Separator --- */
+        QFrame#navigationSeparator {
+            background-color: #3c3c3c;
+            max-width: 1px;
+        }
+
+        /* --- Collapsible Section --- */
+        CollapsibleSection {
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 5px;
+        }
+        QPushButton#collapsibleHeader {
+            background-color: rgba(255, 255, 255, 0.08);
+            padding: 8px 5px;
+            border: none;
+            text-align: left;
+            font-size: 10pt;
+            font-weight: bold;
+        }
+        QPushButton#collapsibleHeader:hover {
+            background-color: rgba(255, 255, 255, 0.12);
+        }
+        QWidget#collapsibleContent {
+            background-color: transparent;
+            border: none;
         }
     """)
+    
