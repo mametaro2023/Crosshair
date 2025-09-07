@@ -80,7 +80,13 @@ class ControlPanel(QtWidgets.QWidget):
         quit_action.triggered.connect(self._quit_app)
 
         self.tray_icon.setContextMenu(tray_menu)
+        self.tray_icon.activated.connect(self._on_tray_icon_activated)
         self.tray_icon.show()
+
+    def _on_tray_icon_activated(self, reason):
+        if reason == QtWidgets.QSystemTrayIcon.Trigger:
+            self.show()
+            self.activateWindow()
 
     def _quit_app(self):
         self.overlay.clean_up()
@@ -310,18 +316,20 @@ class ControlPanel(QtWidgets.QWidget):
         if self.overlay.is_dirty:
             reply = QtWidgets.QMessageBox.question(
                 self, "保存されていません",
-                "現在の設定はプリセットとして保存されていません。保存しますか？",
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No | QtWidgets.QMessageBox.Cancel
+                "現在の設定はプリセットとして保存されていません。終了する前に保存しますか？",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No | QtWidgets.QMessageBox.Cancel,
+                QtWidgets.QMessageBox.Cancel
             )
             if reply == QtWidgets.QMessageBox.Yes:
-                if not self.save_preset(): 
+                if not self.save_preset():
                     event.ignore()
                     return
             elif reply == QtWidgets.QMessageBox.Cancel:
                 event.ignore()
                 return
-        event.accept()
-        self.overlay.close()
+        
+        self.hide()
+        event.ignore()
 
     def open_settings(self):
         dlg = SettingsDialog(self, self.overlay.overall_preset_folder, self.overlay.shape_preset_folder)

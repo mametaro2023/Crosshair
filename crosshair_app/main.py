@@ -4,18 +4,6 @@ import time
 import keyboard
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-# For single instance check
-if sys.platform == "win32":
-    try:
-        from win32event import CreateMutex  # type: ignore
-        from win32api import GetLastError  # type: ignore
-        from winerror import ERROR_ALREADY_EXISTS  # type: ignore
-    except ImportError:
-        # pywin32 is not installed, single instance check will be skipped.
-        CreateMutex = None 
-else:
-    CreateMutex = None
-
 from . import theme
 from . import config
 from . import utils
@@ -26,19 +14,6 @@ from .core.overlay_drawing import OverlayDrawingMixin
 from .core.overlay_hotkeys import OverlayHotkeysMixin
 from .core.overlay_updates import OverlayUpdatesMixin
 from .core.overlay_utils import OverlayUtilsMixin
-
-class SingleInstance: 
-    def __init__(self, name):
-        self.mutex = None
-        self.mutex_name = name
-        if CreateMutex:
-            self.mutex = CreateMutex(None, 1, self.mutex_name)
-            self.already_running = (GetLastError() == ERROR_ALREADY_EXISTS)
-        else:
-            self.already_running = False
-
-    def is_running(self):
-        return self.already_running
 
 class CrosshairOverlay(
     CrosshairOverlayBase,
@@ -86,22 +61,6 @@ def check_updates_thread(overlay):
         print("新しいバージョンは見つかりませんでした。")
 
 def gui_main():
-    # --- Single Instance Check ---
-    instance = SingleInstance("CrosshairApp-mametaro-GlobalMutex-2023")
-    if instance.is_running():
-        # Create a temporary app to show a message box
-        temp_app = QtWidgets.QApplication.instance() # Check if an instance already exists
-        if temp_app is None: # If not, create one
-            temp_app = QtWidgets.QApplication(sys.argv)
-        
-        error_box = QtWidgets.QMessageBox()
-        error_box.setIcon(QtWidgets.QMessageBox.Warning)
-        error_box.setText("Crosshairはすでに実行中です。")
-        error_box.setWindowTitle("多重起動エラー")
-        error_box.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        error_box.exec_()
-        sys.exit(0)
-
     app = QtWidgets.QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
     theme.apply_modern_dark_theme(app)

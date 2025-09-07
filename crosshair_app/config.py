@@ -1,7 +1,7 @@
 import os
 import json
 
-APP_VERSION = "ver1.6.2" 
+APP_VERSION = "ver1.7" 
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".crosshair_config.json")
 DEFAULT_OVERALL_PRESET_FOLDER = os.path.join(os.path.expanduser("~"), "Documents", "CrosshairPresets")
 DEFAULT_SHAPE_PRESET_FOLDER = os.path.join(os.path.expanduser("~"), "Documents", "CrosshairShapes")
