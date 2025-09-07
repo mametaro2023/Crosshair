@@ -3,7 +3,7 @@ def update_control_panel_ui(self):
     # Block all relevant signals to prevent loops during UI updates
     widgets_to_block = [
         self.monitor_selection_box, self.shape_box, self.dot_slider, self.alpha_value_slider,
-        self.dot_alpha_slider, self.fade_on_shoot_checkbox, self.crosshair_btn, self.dot_btn,
+        self.dot_alpha_slider, self.fade_on_shoot_checkbox, self.fade_multiplier_slider, self.crosshair_btn, self.dot_btn,
         self.outline_btn, self.outline_width_slider, self.vline_length_slider, self.hline_length_slider,
         self.line_thickness_slider, self.gap_slider, self.circle_outline_btn, self.circle_outline_width_slider,
         self.circle_thickness_slider, self.circle_diameter_slider, self.chevron_outline_btn,
@@ -74,6 +74,8 @@ def update_control_panel_ui(self):
     self.alpha_value_slider.setValue(int(self.overlay.crosshair_alpha * 100))
     self.alpha_value_edit.setText(f"{self.overlay.crosshair_alpha:.3f}")
     self.fade_on_shoot_checkbox.setChecked(self.overlay.fade_on_shoot_enabled)
+    self.fade_multiplier_widget.setVisible(self.overlay.fade_on_shoot_enabled)
+    self.update_fade_multiplier_ui()
 
     if is_cross_shape:
         self.outline_btn.setChecked(self.overlay.crosshair_outline_enabled)
@@ -234,3 +236,8 @@ def update_dot_offset_y(self, val):
     self.overlay.dot_offset_y = val
     self.dot_offset_y_edit.setText(str(val))
     self.schedule_overlay_update()
+
+def update_fade_multiplier_ui(self):
+    multiplier = self.overlay.fade_on_shoot_multiplier
+    self.fade_multiplier_slider.setValue(int(multiplier * 100))
+    self.fade_multiplier_edit.setText(f"{multiplier:.2f}")

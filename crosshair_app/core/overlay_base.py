@@ -44,6 +44,7 @@ class CrosshairOverlayBase(QtWidgets.QWidget):
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
 
         self.fade_on_shoot_enabled = False
+        self.fade_on_shoot_multiplier = 0.3
         self.is_shooting = False
 
         self.mouse_listener = mouse.Listener(on_click=self._on_click)
@@ -100,6 +101,7 @@ class CrosshairOverlayBase(QtWidgets.QWidget):
             # 画像系クロスヘアのリサイズ設定
             "image_crosshair_size": 40,
             "antialiasing_enabled": True, # New setting for anti-aliasing
+            "fade_on_shoot_multiplier": 0.3,
         }
         self.drawing_order = loaded_config.get("drawing_order", "dot_on_top")
         self.last_selected_preset = loaded_config.get("last_selected", "デフォルト設定")
@@ -161,7 +163,8 @@ class CrosshairOverlayBase(QtWidgets.QWidget):
         self.dot_alpha = config_data.get("dot_alpha", 1.0)
         self.dot_offset_x = config_data.get("dot_offset_x", 0)
         self.dot_offset_y = config_data.get("dot_offset_y", 0)
-        self.fade_on_shoot_enabled = config_data.get("fade_on_shoot", False) 
+        self.fade_on_shoot_enabled = config_data.get("fade_on_shoot", False)
+        self.fade_on_shoot_multiplier = config_data.get("fade_on_shoot_multiplier", 0.3) 
         self.crosshair_shape = config_data.get("crosshair_shape", "十字")
         self.crosshair_image_path = config_data.get("crosshair_image_path", None)
 
@@ -214,6 +217,7 @@ class CrosshairOverlayBase(QtWidgets.QWidget):
             "crosshair_alpha": self.crosshair_alpha,
             "dot_alpha": self.dot_alpha,
             "fade_on_shoot": self.fade_on_shoot_enabled,
+            "fade_on_shoot_multiplier": self.fade_on_shoot_multiplier,
             "crosshair_shape": self.crosshair_shape,
             "crosshair_image_path": self.crosshair_image_path,
             # 十字アドバンスド設定

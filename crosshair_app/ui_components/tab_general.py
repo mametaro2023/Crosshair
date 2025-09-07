@@ -1,5 +1,5 @@
 
-from PyQt5 import QtWidgets
+from PyQt5 import QtCore, QtWidgets
 
 def create_tab(panel):
     """「全般」タブを生成する"""
@@ -32,6 +32,19 @@ def create_tab(panel):
     panel.fade_on_shoot_checkbox = QtWidgets.QCheckBox("射撃中はクロスヘアを薄くする")
     panel.fade_on_shoot_checkbox.toggled.connect(panel.toggle_fade_on_shoot)
     general_layout.addWidget(panel.fade_on_shoot_checkbox)
+
+    # --- Fade on shoot multiplier ---
+    panel.fade_multiplier_widget = QtWidgets.QWidget()
+    fade_multiplier_layout = QtWidgets.QHBoxLayout(panel.fade_multiplier_widget)
+    fade_multiplier_layout.setContentsMargins(20, 0, 0, 0)
+    panel.fade_multiplier_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+    panel.fade_multiplier_slider.setRange(0, 100)
+    panel.fade_multiplier_edit = QtWidgets.QLineEdit()
+    panel.fade_multiplier_edit.setFixedWidth(45)
+    fade_multiplier_layout.addWidget(QtWidgets.QLabel("フェード倍率:"))
+    fade_multiplier_layout.addWidget(panel.fade_multiplier_slider)
+    fade_multiplier_layout.addWidget(panel.fade_multiplier_edit)
+    general_layout.addWidget(panel.fade_multiplier_widget)
 
     # Anti-aliasing checkbox
     panel.antialiasing_checkbox = QtWidgets.QCheckBox("アンチエイリアスを有効にする")

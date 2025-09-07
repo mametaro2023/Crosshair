@@ -47,7 +47,7 @@ class OverlayDrawingMixin:
     def _draw_crosshair(self, painter):
         ch_alpha = self.crosshair_alpha
         if self.fade_on_shoot_enabled and self.is_shooting:
-            ch_alpha *= 0.3
+            ch_alpha *= self.fade_on_shoot_multiplier
 
         if self.crosshair_visible:
             painter.setOpacity(ch_alpha)
@@ -357,7 +357,7 @@ class OverlayDrawingMixin:
     def _draw_dot(self, painter):
         dot_alpha = self.dot_alpha
         if self.fade_on_shoot_enabled and self.is_shooting:
-            dot_alpha *= 0.3
+            dot_alpha *= self.fade_on_shoot_multiplier
 
         if self.dot_visible and self.dot_radius > 0:
             center_x = self.center_x + self.dot_offset_x

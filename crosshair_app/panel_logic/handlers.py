@@ -15,7 +15,7 @@ def _on_alpha_input_finished(panel_self):
             value = int(value * 1000) / 1000.0 # 小数点以下第3位で切り捨て
             if value > 1.0: value = 1.0
             if value < 0.0: value = 0.0
-            panel_self.alpha_slider.setValue(int(value * 100))
+            panel_self.alpha_value_slider.setValue(int(value * 100))
         except ValueError:
             panel_self.alpha_value_edit.setText(f"{original_value:.3f}")
     return handler
@@ -171,6 +171,7 @@ def update_dot_alpha(self, val):
 
 def toggle_fade_on_shoot(self, checked):
     self.overlay.fade_on_shoot_enabled = checked
+    self.fade_multiplier_widget.setVisible(checked)
     self.schedule_overlay_update()
 
 def toggle_antialiasing(self, checked):
@@ -358,4 +359,10 @@ def import_valorant_crosshair(self):
 
 def update_dot_shape(self, shape_text):
     self.overlay.dot_shape = shape_text
+    self.schedule_overlay_update()
+
+def update_fade_multiplier(self, val):
+    multiplier = round(val / 100, 2)
+    self.overlay.fade_on_shoot_multiplier = multiplier
+    self.fade_multiplier_edit.setText(f"{multiplier:.2f}")
     self.schedule_overlay_update()

@@ -205,6 +205,7 @@ class ControlPanel(QtWidgets.QWidget):
         self._on_chevron_thickness_input_finished = handlers._create_line_edit_handler(self, self.chevron_thickness_edit, self.chevron_thickness_slider, 'chevron_thickness')
         self._on_chevron_length_input_finished = handlers._create_line_edit_handler(self, self.chevron_length_edit, self.chevron_length_slider, 'chevron_length')
         self._on_image_crosshair_size_input_finished = handlers._create_line_edit_handler(self, self.image_crosshair_size_edit, self.image_crosshair_size_slider, 'image_crosshair_size')
+        self._on_fade_multiplier_input_finished = handlers._create_line_edit_handler(self, self.fade_multiplier_edit, self.fade_multiplier_slider, 'fade_on_shoot_multiplier', is_float=True)
 
     def _connect_signals(self):
         self.master_toggle_btn.clicked.connect(self.toggle_master_visibility)
@@ -242,6 +243,8 @@ class ControlPanel(QtWidgets.QWidget):
         self.chevron_thickness_edit.editingFinished.connect(self._on_chevron_thickness_input_finished)
         self.chevron_length_edit.editingFinished.connect(self._on_chevron_length_input_finished)
         self.image_crosshair_size_edit.editingFinished.connect(self._on_image_crosshair_size_input_finished)
+        self.fade_multiplier_slider.valueChanged.connect(self.update_fade_multiplier)
+        self.fade_multiplier_edit.editingFinished.connect(self._on_fade_multiplier_input_finished)
 
 
     # --- Method Assignments from Imported Logic ---
@@ -263,6 +266,7 @@ class ControlPanel(QtWidgets.QWidget):
     update_circle_thickness = updates.update_circle_thickness
     update_circle_diameter = updates.update_circle_diameter
     update_drawing_order = updates.update_drawing_order
+    update_fade_multiplier_ui = updates.update_fade_multiplier_ui
 
     # --- ここから外枠 ---
     update_outer_line_enabled = updates.update_outer_line_enabled
@@ -286,6 +290,7 @@ class ControlPanel(QtWidgets.QWidget):
     update_dot_alpha = handlers.update_dot_alpha
     update_dot_shape = handlers.update_dot_shape
     toggle_fade_on_shoot = handlers.toggle_fade_on_shoot
+    update_fade_multiplier = handlers.update_fade_multiplier
     set_crosshair_color = handlers.set_crosshair_color
     set_dot_outer_color = handlers.set_dot_outer_color
     set_dot_inner_color = handlers.set_dot_inner_color
