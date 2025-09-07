@@ -17,7 +17,7 @@ class ControlPanel(QtWidgets.QWidget):
         self._initial_load_complete = False
         self.overlay = overlay
         self.setWindowTitle("Crosshair Control Panel")
-        self.setGeometry(100, 100, 450, 100)
+        self.setGeometry(100, 100, 580, 720)
         self._panel_animations = []
 
         self.setObjectName("controlPanel")
@@ -52,6 +52,12 @@ class ControlPanel(QtWidgets.QWidget):
         self.setWindowOpacity(0.0)
         self.animate_panel_show()
         self._pulse_once(self.save_btn, QtGui.QColor("#0078d7"))
+
+        # Install wheel event filter on all sliders to prevent scroll hijacking
+        self.wheel_filter = utils.WheelEventFilter(self)
+        sliders = self.findChildren(QtWidgets.QSlider)
+        for slider in sliders:
+            slider.installEventFilter(self.wheel_filter)
 
     # --- UI Creation ---
     def _create_menu_bar(self, parent_layout):
@@ -107,24 +113,22 @@ class ControlPanel(QtWidgets.QWidget):
         # --- Pages ---
         self.pages_widget = QtWidgets.QStackedWidget()
         self.pages_widget.setObjectName("pagesWidget")
-        
-        # Use a container for the pages to manage margins correctly
-        pages_container = QtWidgets.QWidget()
-        pages_layout = QtWidgets.QVBoxLayout(pages_container)
-        pages_layout.setContentsMargins(15, 0, 15, 0)
-        pages_layout.addWidget(self.pages_widget)
-        main_view_layout.addWidget(pages_container, 1) # Add container, set stretch factor
+        main_view_layout.addWidget(self.pages_widget, 1)
 
-        # --- Create and add pages ---
+        # --- Create and add pages with ScrollArea ---
         general_tab = tab_general.create_tab(self)
         ch_tab = tab_crosshair.create_tab(self)
         dot_tab = tab_dot.create_tab(self)
         keys_tab = tab_keys.create_tab(self)
 
-        self.pages_widget.addWidget(general_tab)
-        self.pages_widget.addWidget(ch_tab)
-        self.pages_widget.addWidget(dot_tab)
-        self.pages_widget.addWidget(keys_tab)
+        tabs_to_add = [general_tab, ch_tab, dot_tab, keys_tab]
+        for tab_content in tabs_to_add:
+            scroll_area = QtWidgets.QScrollArea()
+            scroll_area.setWidget(tab_content)
+            scroll_area.setWidgetResizable(True)
+            scroll_area.setObjectName("pageScrollArea")
+            scroll_area.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+            self.pages_widget.addWidget(scroll_area)
 
         # --- Add items to navigation ---
         self.nav_list.addItem(QtWidgets.QListWidgetItem(" 全般"))

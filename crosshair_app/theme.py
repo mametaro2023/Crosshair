@@ -230,5 +230,36 @@ def apply_modern_dark_theme(app: QtWidgets.QApplication) -> None:
             background-color: transparent;
             border: none;
         }
+
+        /* --- Scrollable Page Area --- */
+        QScrollArea#pageScrollArea {
+            border: none;
+            background-color: transparent;
+        }
+        /* The direct child of the viewport of the scroll area */
+        QScrollArea#pageScrollArea > QWidget > QWidget {
+            background-color: transparent;
+            padding: 0px 15px 0px 15px;
+        }
+        /* Scroll Bar */
+        QScrollBar:vertical {
+            border: none;
+            background: #2a2a2a;
+            width: 12px;
+            margin: 0px 0px 0px 0px;
+        }
+        QScrollBar::handle:vertical {
+            background: #4a4a4a;
+            min-height: 20px;
+            border-radius: 6px;
+        }
+        QScrollBar::handle:vertical:hover {
+            background: #5a5a5a;
+        }
+        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+            height: 0px;
+            border: none;
+            background: none;
+        }
     """)
     

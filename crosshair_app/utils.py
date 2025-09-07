@@ -417,3 +417,11 @@ def parse_valorant_crosshair_code(code):
         settings['crosshair_alpha'] = 1.0 # Set overall crosshair alpha to 1.0 for non-advanced crosshairs
 
     return settings
+
+class WheelEventFilter(QtCore.QObject):
+    def eventFilter(self, obj, event):
+        if event.type() == QtCore.QEvent.Wheel and isinstance(obj, QtWidgets.QSlider):
+            # Forward the event to the parent widget, likely the scroll area
+            event.ignore()
+            return True # Event was handled (ignored)
+        return super().eventFilter(obj, event)
