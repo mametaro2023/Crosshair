@@ -17,6 +17,7 @@ class ControlPanel(QtWidgets.QWidget):
         self._initial_load_complete = False
         self.overlay = overlay
         self.setWindowTitle("Crosshair Control Panel")
+        self.setWindowIcon(QtGui.QIcon("mame.png"))
         self.setGeometry(100, 100, 580, 720)
         self._panel_animations = []
 
@@ -37,6 +38,7 @@ class ControlPanel(QtWidgets.QWidget):
         self._create_master_toggle(main_layout)
         self._create_presets_group(main_layout)
         self._create_main_view(main_layout)
+        self._create_tray_icon()
 
         self._assign_handlers()
         self._connect_signals()
@@ -49,15 +51,40 @@ class ControlPanel(QtWidgets.QWidget):
             self.toggle_apex_monitoring(True)
 
         self.update_master_toggle_button_ui()
-        self.setWindowOpacity(0.0)
-        self.animate_panel_show()
-        self._pulse_once(self.save_btn, QtGui.QColor("#0078d7"))
+
+        # Start hidden if both Apex monitoring and startup are enabled
+        start_hidden = False
+        if self.overlay.monitor_apex and utils.IS_WINDOWS and utils.is_in_startup(utils.APP_NAME):
+            start_hidden = True
+
+        if not start_hidden:
+            self.setWindowOpacity(0.0)
+            self.animate_panel_show()
+            self._pulse_once(self.save_btn, QtGui.QColor("#0078d7"))
 
         # Install wheel event filter on all sliders to prevent scroll hijacking
         self.wheel_filter = utils.WheelEventFilter(self)
         sliders = self.findChildren(QtWidgets.QSlider)
         for slider in sliders:
             slider.installEventFilter(self.wheel_filter)
+
+    def _create_tray_icon(self):
+        self.tray_icon = QtWidgets.QSystemTrayIcon(self)
+        self.tray_icon.setIcon(QtGui.QIcon("mame.png"))
+
+        tray_menu = QtWidgets.QMenu()
+        show_action = tray_menu.addAction("表示")
+        show_action.triggered.connect(self.show)
+        
+        quit_action = tray_menu.addAction("終了")
+        quit_action.triggered.connect(self._quit_app)
+
+        self.tray_icon.setContextMenu(tray_menu)
+        self.tray_icon.show()
+
+    def _quit_app(self):
+        self.overlay.clean_up()
+        QtWidgets.QApplication.instance().quit()
 
     # --- UI Creation ---
     def _create_menu_bar(self, parent_layout):
@@ -422,6 +449,9 @@ class ControlPanel(QtWidgets.QWidget):
     def on_game_state_changed(self, is_running):
         if self.overlay.monitor_apex:
             self.set_master_enabled(is_running)
+            if is_running:
+                self.show()
+                self.activateWindow()
 
     def toggle_apex_monitoring(self, checked):
         self.overlay.monitor_apex = checked
