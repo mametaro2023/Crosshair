@@ -60,7 +60,7 @@ class OverlayUtilsMixin:
         if enabled and not manual_toggle and hasattr(self, 'panel'):
             # GUIスレッドで実行するために、インボークするかシグナルを使うのがより安全
             QtCore.QMetaObject.invokeMethod(self.panel, "show", QtCore.Qt.QueuedConnection)
-            QtCore.QMetaObject.invokeMethod(self.panel, "activateWindow", QtCore.Qt.QueuedConnection)
+            self.panel_activation_requested.emit()
 
     def restart_application(self):
         """アプリケーションを再起動する"""

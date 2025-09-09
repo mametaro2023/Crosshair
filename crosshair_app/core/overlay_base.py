@@ -16,6 +16,7 @@ class CrosshairOverlayBase(QtWidgets.QWidget):
     download_progress = QtCore.pyqtSignal(int)
     # 表示切替シグナル（スレッドセーフなUI更新のため）
     master_visibility_changed = QtCore.pyqtSignal()
+    panel_activation_requested = QtCore.pyqtSignal()
 
     def __init__(self, screens):
         super().__init__()
@@ -55,6 +56,9 @@ class CrosshairOverlayBase(QtWidgets.QWidget):
         loaded_config = config.load_config()
         self.monitor_apex = loaded_config.get("monitor_apex", False)
         self.selected_monitor_index = loaded_config.get("selected_monitor_index", 0)
+        self.apex_platform = loaded_config.get("apex_platform", "PC")
+        self.apex_username = loaded_config.get("apex_username", "")
+        self.auto_track_apex = loaded_config.get("auto_track_apex", False)
 
         # ホットキーの設定 (will be moved to overlay_hotkeys.py)
         loaded_toggle_hotkey = loaded_config.get("toggle_hotkey", "ctrl+f1")
@@ -257,9 +261,12 @@ class CrosshairOverlayBase(QtWidgets.QWidget):
             "shape_preset_folder": self.shape_preset_folder,
             "monitor_apex": self.monitor_apex,
             "selected_monitor_index": self.selected_monitor_index,
-            "toggle_hotkey": self.toggle_hotkey
+            "toggle_hotkey": self.toggle_hotkey,
+            "apex_platform": self.apex_platform,
+            "apex_username": self.apex_username,
+            "auto_track_apex": self.auto_track_apex
         }
-        config.save_global_config(main_config)
+        config.save_config(main_config)
 
     def clean_up(self):
         self.mouse_listener.stop()

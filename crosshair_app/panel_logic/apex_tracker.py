@@ -8,6 +8,7 @@ class ApexTracker(QtCore.QObject):
     # Signals to communicate with the GUI thread
     data_updated = QtCore.pyqtSignal(dict)
     error_occurred = QtCore.pyqtSignal(str)
+    tracking_status_changed = QtCore.pyqtSignal(bool) # New signal
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -34,9 +35,13 @@ class ApexTracker(QtCore.QObject):
         self._is_running = True
         self._thread = threading.Thread(target=self._tracking_loop, daemon=True)
         self._thread.start()
+        self.tracking_status_changed.emit(True) # Emit signal when tracking starts
+        print("[DEBUG] ApexTracker: tracking_status_changed(True) emitted.")
 
     def stop_tracking(self):
         self._is_running = False
+        self.tracking_status_changed.emit(False) # Emit signal when tracking stops
+        print("[DEBUG] ApexTracker: tracking_status_changed(False) emitted.")
 
     def _tracking_loop(self):
         initial_data_fetched = False

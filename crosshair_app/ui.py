@@ -19,7 +19,7 @@ class ControlPanel(QtWidgets.QWidget):
         self.overlay = overlay
         self.setWindowTitle("Crosshair Control Panel")
         self.setWindowIcon(QtGui.QIcon("mame.png"))
-        self.setGeometry(100, 100, 800, 720)
+        self.setGeometry(100, 100, 810, 720)
         self.apex_rank_history = []
         self._panel_animations = []
 
@@ -45,11 +45,13 @@ class ControlPanel(QtWidgets.QWidget):
 
         self._assign_handlers()
         self._connect_signals()
+        self._connect_overlay_signals()
 
         self.reload_shapes()
         self.update_control_panel_ui()
         self.load_presets()
         
+        print(f"[DEBUG] ControlPanel.__init__: overlay.monitor_apex={self.overlay.monitor_apex}, utils.psutil={utils.psutil}")
         if self.overlay.monitor_apex and utils.psutil:
             self.toggle_apex_monitoring(True)
 
@@ -157,7 +159,13 @@ class ControlPanel(QtWidgets.QWidget):
         ch_tab = tab_crosshair.create_tab(self)
         dot_tab = tab_dot.create_tab(self)
         keys_tab = tab_keys.create_tab(self)
-        self.apex_tab = tab_apex_rank.create_tab(self)
+        self.apex_tab = tab_apex_rank.create_tab(self, self.overlay)
+
+        # Set initial values for Apex Rank tab from loaded config
+        platform_index = self.apex_tab.platform_combo.findData(self.overlay.apex_platform)
+        if platform_index != -1:
+            self.apex_tab.platform_combo.setCurrentIndex(platform_index)
+        self.apex_tab.username_edit.setText(self.overlay.apex_username)
 
         tabs_to_add = [general_tab, ch_tab, dot_tab, keys_tab, self.apex_tab]
         for tab_content in tabs_to_add:
@@ -254,12 +262,16 @@ class ControlPanel(QtWidgets.QWidget):
 
         self._connect_apex_signals()
 
+    def _connect_overlay_signals(self):
+        self.overlay.panel_activation_requested.connect(self.activateWindow)
+
 
     # --- Apex Legends Rank Tracker Methods ---
     def _setup_apex_tracker(self):
         self.apex_tracker = apex_tracker.ApexTracker(self)
         self.apex_tracker.data_updated.connect(self._on_apex_data_updated)
         self.apex_tracker.error_occurred.connect(self._on_apex_tracker_error)
+        self.apex_tracker.tracking_status_changed.connect(self._on_apex_tracker_status_changed) # New connection
 
     def _connect_apex_signals(self):
         self.apex_tab.track_button.toggled.connect(self._on_apex_track_button_toggled)
@@ -267,20 +279,29 @@ class ControlPanel(QtWidgets.QWidget):
         self.apex_tab.platform_combo.currentIndexChanged.connect(self._update_apex_credentials)
 
     def _on_apex_track_button_toggled(self, checked):
+        print(f"[DEBUG] _on_apex_track_button_toggled called with checked={checked}")
         if checked:
             self._update_apex_credentials()
+            print("[DEBUG] Starting Apex tracking.")
             self.apex_tracker.start_tracking()
-            self.apex_tab.track_button.setText("トラッキング停止")
             self.apex_rank_history = [] # Reset history on new tracking session
             self._update_apex_graph()
         else:
+            print("[DEBUG] Stopping Apex tracking.")
             self.apex_tracker.stop_tracking()
-            self.apex_tab.track_button.setText("トラッキング開始")
 
     def _update_apex_credentials(self):
         platform = self.apex_tab.platform_combo.currentData()
         username = self.apex_tab.username_edit.text()
         self.apex_tracker.set_credentials(platform, username)
+        # Save the updated credentials to overlay and then to config
+        self.overlay.apex_platform = platform
+        self.overlay.apex_username = username
+        self.overlay.save_global_config() # Save immediately
+        # Save the updated credentials to overlay and then to config
+        self.overlay.apex_platform = platform
+        self.overlay.apex_username = username
+        self.overlay.save_global_config() # Save immediately
 
     @QtCore.pyqtSlot(dict)
     def _on_apex_data_updated(self, data):
@@ -325,36 +346,67 @@ class ControlPanel(QtWidgets.QWidget):
         canvas = self.apex_tab.graph_canvas
         ax = canvas.axes
         ax.clear()
+        canvas.apply_style()  # Re-apply the custom style
 
-        if self.apex_rank_history:
+        # Set labels and title (do this once)
+        ax.set_xlabel("試合数", fontsize=12, color='#e0e0e0')
+        ax.set_ylabel("ランクスコア (RP)", fontsize=12, color='#e0e0e0')
+        ax.set_title("ランクスコア推移", fontsize=16, color='#ffffff', pad=20)
+
+        if self.apex_rank_history and len(self.apex_rank_history) > 1:
             timestamps, scores = zip(*self.apex_rank_history)
             match_numbers = range(1, len(scores) + 1)
 
-            ax.plot(match_numbers, scores, marker='o', linestyle='-', color='#007ACC')
-            
-            # Set labels and title
-            ax.set_xlabel("試合数")
-            ax.set_ylabel("ランクスコア (RP)")
-            ax.set_title("ランクスコア推移")
-            
-            # Ensure x-axis ticks are integers
+            # Stylish plot
+            line_color = '#8A2BE2'  # A vibrant purple
+            fill_color = '#8A2BE2'
+            ax.plot(match_numbers, scores, marker='o', linestyle='-', color=line_color, linewidth=3, markersize=9, markeredgecolor='#282c34', markeredgewidth=2)
+            ax.fill_between(match_numbers, scores, color=fill_color, alpha=0.2, interpolate=True)
+
+            # Add data point labels with subtle background
+            for i, score in enumerate(scores):
+                ax.text(match_numbers[i], score + (max(scores)*0.02), str(score), ha='center', va='bottom', color='#ffffff', fontsize=10, weight='bold', 
+                        bbox=dict(facecolor='#282c34', edgecolor='none', boxstyle='round,pad=0.3', alpha=0.7))
+
+            # Ensure x-axis ticks are integers and set limits
             ax.xaxis.set_major_locator(MaxNLocator(integer=True))
-            ax.set_xlim(left=0.5, right=len(scores) + 0.5)
+            ax.margins(x=0.02)  # Small horizontal padding
 
-            # Auto-adjust Y-axis padding
+            # Improved Y-axis scaling with more padding
             min_score, max_score = min(scores), max(scores)
-            padding = (max_score - min_score) * 0.1 if (max_score - min_score) > 0 else 10
-            ax.set_ylim(min_score - padding - 50, max_score + padding + 50)
-            
-            ax.grid(True, which='both', linestyle='--', linewidth=0.5, color='#444444')
-        else:
-            # If no data, show empty graph
-            ax.set_xlabel("試合数")
-            ax.set_ylabel("ランクスコア (RP)")
-            ax.set_title("ランクスコア推移")
-            ax.grid(True, which='both', linestyle='--', linewidth=0.5, color='#444444')
+            score_range = max_score - min_score
+            MIN_VISIBLE_RANGE = 800  # Increased minimum range for better visibility
 
-        canvas.figure.tight_layout()
+            if score_range < MIN_VISIBLE_RANGE:
+                mid_point = (min_score + max_score) / 2
+                ax.set_ylim(mid_point - (MIN_VISIBLE_RANGE / 2), mid_point + (MIN_VISIBLE_RANGE / 2))
+            else:
+                # Add more padding if the range is large
+                padding = score_range * 0.15 # Increased padding
+                ax.set_ylim(min_score - padding, max_score + padding)
+
+            # Set x-axis ticks to show all match numbers if few, or a reasonable subset
+            if len(match_numbers) <= 10:
+                ax.set_xticks(match_numbers)
+            else:
+                ax.set_xticks(MaxNLocator(nbins=5).tick_values(1, len(match_numbers)))
+
+        elif self.apex_rank_history:  # Exactly one data point
+            score = self.apex_rank_history[0][1]
+            ax.plot([1], [score], marker='o', linestyle='-', color='#8A2BE2', markersize=9, markeredgecolor='#282c34', markeredgewidth=2)
+            ax.text(1, score + (score*0.02), str(score), ha='center', va='bottom', color='#ffffff', fontsize=10, weight='bold',
+                    bbox=dict(facecolor='#282c34', edgecolor='none', boxstyle='round,pad=0.3', alpha=0.7))
+            ax.set_xlim(0.5, 1.5)
+            ax.set_ylim(score - 400, score + 400) # Increased fixed range for a single point
+            ax.set_xticks([1]) # Ensure only '1' is shown for single point
+
+        else:  # No data
+            ax.text(0.5, 0.5, "トラッキングを開始してデータを表示", ha='center', va='center', transform=ax.transAxes, color='#b0b0b0', fontsize=14) # Slightly larger and lighter gray
+            # Hide ticks and labels for empty state
+            ax.set_xticks([])
+            ax.set_yticks([])
+
+        canvas.figure.tight_layout(pad=3.0) # Increased padding for overall layout
         canvas.draw()
 
     @QtCore.pyqtSlot(str)
@@ -362,6 +414,23 @@ class ControlPanel(QtWidgets.QWidget):
         QtWidgets.QMessageBox.warning(self, "トラッカーエラー", message)
         if self.apex_tab.track_button.isChecked():
             self.apex_tab.track_button.setChecked(False)
+
+    @QtCore.pyqtSlot(bool)
+    def _on_apex_tracker_status_changed(self, is_tracking):
+        print(f"[DEBUG] ControlPanel: _on_apex_tracker_status_changed received signal with is_tracking={is_tracking}")
+        # Ensure the button's checked state matches the actual tracking status
+        if self.apex_tab.track_button.isChecked() != is_tracking:
+            self.apex_tab.track_button.setChecked(is_tracking)
+        
+        # Update button text based on tracking status
+        if is_tracking:
+            self.apex_tab.track_button.setText("トラッキング停止")
+            self.apex_tab.platform_combo.setEnabled(False)
+            self.apex_tab.username_edit.setEnabled(False)
+        else:
+            self.apex_tab.track_button.setText("トラッキング開始")
+            self.apex_tab.platform_combo.setEnabled(True)
+            self.apex_tab.username_edit.setEnabled(True)
 
     # --- Method Assignments from Imported Logic ---
     # Presets
@@ -576,11 +645,35 @@ class ControlPanel(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot(bool)
     def on_game_state_changed(self, is_running):
+        print(f"[DEBUG] on_game_state_changed: is_running={is_running}, monitor_apex={self.overlay.monitor_apex}, auto_track_apex={self.overlay.auto_track_apex}")
         if self.overlay.monitor_apex:
             self.set_master_enabled(is_running)
             if is_running:
                 self.show()
                 self.activateWindow()
+                # New: Automatically start tracking if auto_track_apex is enabled
+                if self.overlay.auto_track_apex:
+                    print("[DEBUG] auto_track_apex is True and Apex is running. Setting ApexTracker credentials.")
+                    # Ensure credentials are set before attempting to start tracking
+                    self.apex_tracker.set_credentials(self.overlay.apex_platform, self.overlay.apex_username)
+                    
+                    print("[DEBUG] Attempting to check track_button.")
+                    # Only set if not already checked to ensure toggled signal is emitted
+                    if not self.apex_tab.track_button.isChecked():
+                        self.apex_tab.track_button.setChecked(True)
+                else:
+                    print("[DEBUG] auto_track_apex is False or Apex is not running.")
+            else:
+                print("[DEBUG] Apex is not running.")
+                # If auto-tracking is enabled and Apex is not running, stop tracking
+                if self.overlay.auto_track_apex:
+                    print("[DEBUG] auto_track_apex is True and Apex is not running. Stopping Apex tracking.")
+                    self.apex_tracker.stop_tracking()
+                    # Ensure the track button is unchecked if tracking was auto-started and Apex exited
+                    if self.apex_tab.track_button.isChecked():
+                        self.apex_tab.track_button.setChecked(False)
+        else:
+            print("[DEBUG] monitor_apex is False. Game state change ignored.")
 
     def toggle_apex_monitoring(self, checked):
         self.overlay.monitor_apex = checked
@@ -595,15 +688,15 @@ class ControlPanel(QtWidgets.QWidget):
             self.set_master_enabled(is_game_running)
             if self.overlay.game_monitor_thread is None:
                 self.overlay.game_monitor_thread = utils.GameMonitorThread(utils.GAME_PROCESS_NAMES, self.overlay)
+                # Connect the signal here
+                self.overlay.game_monitor_thread.apex_status_changed.connect(self.on_game_state_changed)
                 self.overlay.game_monitor_thread.start()
         else:
             if self.overlay.game_monitor_thread is not None:
                 self.overlay.game_monitor_thread.stop()
         self.update_master_toggle_button_ui()
 
-    @QtCore.pyqtSlot()
-    def on_monitor_thread_finished(self):
-        self.overlay.game_monitor_thread = None
+    
 
     def animate_panel_show(self):
         fade = QtCore.QPropertyAnimation(self, b"windowOpacity")

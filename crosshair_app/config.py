@@ -14,7 +14,10 @@ def load_config():
         "shape_preset_folder": DEFAULT_SHAPE_PRESET_FOLDER,
         "monitor_apex": False,
         "toggle_hotkey": "ctrl+f1",
-        "drawing_order": "dot_on_top" # Add this line
+        "drawing_order": "dot_on_top", # Add this line
+        "apex_platform": "PC",
+        "apex_username": "",
+        "auto_track_apex": False
     }
     
     if not os.path.exists(CONFIG_FILE):
@@ -22,25 +25,25 @@ def load_config():
 
     try:
         with open(CONFIG_FILE, "r", encoding="utf-8") as f:
-            config = json.load(f)
+            config_data = json.load(f)
 
-        if "crosshair_visible" in config: # 旧形式かの判定
+        if "crosshair_visible" in config_data: # 旧形式かの判定
             print("古い形式の設定ファイルを検出しました。新しいプリセット形式に変換します。")
             
             imported_preset_name = "旧バージョンからのインポート設定"
-            overall_folder = config.get("preset_folder", DEFAULT_OVERALL_PRESET_FOLDER)
+            overall_folder = config_data.get("preset_folder", DEFAULT_OVERALL_PRESET_FOLDER)
             os.makedirs(overall_folder, exist_ok=True)
             imported_preset_path = os.path.join(overall_folder, imported_preset_name + PRESET_EXTENSION)
             
             with open(imported_preset_path, "w", encoding="utf-8") as f_preset:
-                json.dump(config, f_preset, indent=4)
+                json.dump(config_data, f_preset, indent=4)
             
             new_main_config = {
                 "last_selected": imported_preset_name,
                 "overall_preset_folder": overall_folder,
                 "shape_preset_folder": DEFAULT_SHAPE_PRESET_FOLDER, # 新しいパスを追加
-                "monitor_apex": config.get("monitor_apex", False),
-                "toggle_hotkey": config.get("toggle_hotkey", "ctrl+f1")
+                "monitor_apex": config_data.get("monitor_apex", False),
+                "toggle_hotkey": config_data.get("toggle_hotkey", "ctrl+f1")
             }
             with open(CONFIG_FILE, "w", encoding="utf-8") as f_main:
                 json.dump(new_main_config, f_main, indent=4)
@@ -51,19 +54,16 @@ def load_config():
         else:
             # 新形式の場合は、デフォルト値を適用
             for key, value in defaults.items():
-                config.setdefault(key, value)
-            return config
+                config_data.setdefault(key, value)
+            return config_data
             
     except Exception as e:
         print(f"設定ファイルの読み込み中にエラーが発生しました: {e}")
         return defaults
 
-    return defaults
-
-def save_global_config(config):
-    """ last_selected, preset_folder, monitor_apex のみを保存 """
+def save_config(config_data):
     try:
         with open(CONFIG_FILE, "w", encoding="utf-8") as f:
-            json.dump(config, f, indent=4)
+            json.dump(config_data, f, indent=4)
     except Exception as e:
-        print(f"グローバル設定の保存に失敗: {e}")
+        print(f"設定の保存に失敗: {e}")

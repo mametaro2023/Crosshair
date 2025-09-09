@@ -112,9 +112,12 @@ def download_mame_png_if_missing(parent_widget=None):
         # GUIがない場合のフォールバック
         download_task()
 
-class GameMonitorThread(threading.Thread):
-    def __init__(self, process_name, overlay):
-        super().__init__()
+class GameMonitorThread(QtCore.QObject, threading.Thread): # Inherit from QObject and Thread
+    apex_status_changed = QtCore.pyqtSignal(bool) # New signal
+
+    def __init__(self, process_name, overlay, parent=None): # Add parent for QObject
+        QtCore.QObject.__init__(self, parent) # Initialize QObject
+        threading.Thread.__init__(self) # Initialize Thread
         self.process_name = process_name
         self.overlay = overlay
         self.running = True
@@ -126,10 +129,11 @@ class GameMonitorThread(threading.Thread):
             current_state = any(p.name() in self.process_name for p in psutil.process_iter(['name']))
             if current_state != last_state:
                 last_state = current_state # Update the local variable
-                # UIの更新はCrosshairOverlayのset_master_enabledに任せる
-                QtCore.QMetaObject.invokeMethod(self.overlay, "set_master_enabled", QtCore.Qt.QueuedConnection, QtCore.Q_ARG(bool, current_state), QtCore.Q_ARG(bool, False)) # manual_toggle=False を明示的に渡す
+                self.apex_status_changed.emit(current_state) # Emit the signal
+                # The overlay's set_master_enabled will be called by ControlPanel's on_game_state_changed
+                # which is now connected to this signal.
             time.sleep(2)
-        self.overlay.panel.on_monitor_thread_finished()
+        # No longer needed as ControlPanel will handle thread finished via signal if necessary
 
     def stop(self):
         self.running = False
