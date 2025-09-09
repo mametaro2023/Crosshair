@@ -56,6 +56,12 @@ class OverlayUtilsMixin:
         # UIの更新は master_visibility_changed シグナル経由で行う
         self.master_visibility_changed.emit()
 
+        # ゲームモニターによってトリガーされ、ゲームが開始された場合はパネルを表示
+        if enabled and not manual_toggle and hasattr(self, 'panel'):
+            # GUIスレッドで実行するために、インボークするかシグナルを使うのがより安全
+            QtCore.QMetaObject.invokeMethod(self.panel, "show", QtCore.Qt.QueuedConnection)
+            QtCore.QMetaObject.invokeMethod(self.panel, "activateWindow", QtCore.Qt.QueuedConnection)
+
     def restart_application(self):
         """アプリケーションを再起動する"""
         self.clean_up()

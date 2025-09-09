@@ -1,4 +1,5 @@
 import os
+import time
 import webbrowser
 from PyQt5 import QtCore, QtGui, QtWidgets
 import keyboard
@@ -6,10 +7,10 @@ import keyboard
 from . import utils
 from . import config
 from .dialogs import SettingsDialog, KeyCaptureDialog
-from .ui_components import tab_general, tab_crosshair, tab_dot, tab_keys
+from .ui_components import tab_general, tab_crosshair, tab_dot, tab_keys, tab_apex_rank
 
 # Import logic from the new sub-package
-from .panel_logic import presets, updates, handlers
+from .panel_logic import presets, updates, handlers, apex_tracker
 
 class ControlPanel(QtWidgets.QWidget):
     def __init__(self, overlay):
@@ -18,7 +19,8 @@ class ControlPanel(QtWidgets.QWidget):
         self.overlay = overlay
         self.setWindowTitle("Crosshair Control Panel")
         self.setWindowIcon(QtGui.QIcon("mame.png"))
-        self.setGeometry(100, 100, 580, 720)
+        self.setGeometry(100, 100, 800, 720)
+        self.apex_rank_history = []
         self._panel_animations = []
 
         self.setObjectName("controlPanel")
@@ -39,6 +41,7 @@ class ControlPanel(QtWidgets.QWidget):
         self._create_presets_group(main_layout)
         self._create_main_view(main_layout)
         self._create_tray_icon()
+        self._setup_apex_tracker()
 
         self._assign_handlers()
         self._connect_signals()
@@ -89,6 +92,7 @@ class ControlPanel(QtWidgets.QWidget):
             self.activateWindow()
 
     def _quit_app(self):
+        self.apex_tracker.stop_tracking()
         self.overlay.clean_up()
         QtWidgets.QApplication.instance().quit()
 
@@ -153,8 +157,9 @@ class ControlPanel(QtWidgets.QWidget):
         ch_tab = tab_crosshair.create_tab(self)
         dot_tab = tab_dot.create_tab(self)
         keys_tab = tab_keys.create_tab(self)
+        self.apex_tab = tab_apex_rank.create_tab(self)
 
-        tabs_to_add = [general_tab, ch_tab, dot_tab, keys_tab]
+        tabs_to_add = [general_tab, ch_tab, dot_tab, keys_tab, self.apex_tab]
         for tab_content in tabs_to_add:
             scroll_area = QtWidgets.QScrollArea()
             scroll_area.setWidget(tab_content)
@@ -168,6 +173,7 @@ class ControlPanel(QtWidgets.QWidget):
         self.nav_list.addItem(QtWidgets.QListWidgetItem(" クロスヘア"))
         self.nav_list.addItem(QtWidgets.QListWidgetItem(" ドット"))
         self.nav_list.addItem(QtWidgets.QListWidgetItem(" キー無効化"))
+        self.nav_list.addItem(QtWidgets.QListWidgetItem(" Apexランク"))
         
         # --- Connect navigation ---
         self.nav_list.currentRowChanged.connect(self.pages_widget.setCurrentIndex)
@@ -246,6 +252,116 @@ class ControlPanel(QtWidgets.QWidget):
         self.fade_multiplier_slider.valueChanged.connect(self.update_fade_multiplier)
         self.fade_multiplier_edit.editingFinished.connect(self._on_fade_multiplier_input_finished)
 
+        self._connect_apex_signals()
+
+
+    # --- Apex Legends Rank Tracker Methods ---
+    def _setup_apex_tracker(self):
+        self.apex_tracker = apex_tracker.ApexTracker(self)
+        self.apex_tracker.data_updated.connect(self._on_apex_data_updated)
+        self.apex_tracker.error_occurred.connect(self._on_apex_tracker_error)
+
+    def _connect_apex_signals(self):
+        self.apex_tab.track_button.toggled.connect(self._on_apex_track_button_toggled)
+        self.apex_tab.username_edit.editingFinished.connect(self._update_apex_credentials)
+        self.apex_tab.platform_combo.currentIndexChanged.connect(self._update_apex_credentials)
+
+    def _on_apex_track_button_toggled(self, checked):
+        if checked:
+            self._update_apex_credentials()
+            self.apex_tracker.start_tracking()
+            self.apex_tab.track_button.setText("トラッキング停止")
+            self.apex_rank_history = [] # Reset history on new tracking session
+            self._update_apex_graph()
+        else:
+            self.apex_tracker.stop_tracking()
+            self.apex_tab.track_button.setText("トラッキング開始")
+
+    def _update_apex_credentials(self):
+        platform = self.apex_tab.platform_combo.currentData()
+        username = self.apex_tab.username_edit.text()
+        self.apex_tracker.set_credentials(platform, username)
+
+    @QtCore.pyqtSlot(dict)
+    def _on_apex_data_updated(self, data):
+        # Extract data
+        current_score = data["current_score"]
+        last_score = data["last_score"]
+        rank_name = data["rank_name"]
+        rank_div = data["rank_div"]
+
+        # Format rank string
+        if rank_name in ["Master", "Predator"]:
+            rank_str = rank_name
+        else:
+            rank_str = f"{rank_name} {rank_div}"
+        
+        self.apex_tab.current_rank_label.setText(rank_str)
+        self.apex_tab.current_score_label.setText(f"{current_score:,} RP")
+
+        # Update score change
+        if last_score is not None:
+            change = current_score - last_score
+            if change > 0:
+                self.apex_tab.score_change_label.setText(f"+{change}")
+                self.apex_tab.score_change_label.setStyleSheet("color: #4CAF50;") # Green
+            elif change < 0:
+                self.apex_tab.score_change_label.setText(f"{change}")
+                self.apex_tab.score_change_label.setStyleSheet("color: #F44336;") # Red
+            else:
+                self.apex_tab.score_change_label.setText("+0")
+                self.apex_tab.score_change_label.setStyleSheet("color: white;")
+        else:
+            # First data point
+            self.apex_tab.score_change_label.setText("+0")
+            self.apex_tab.score_change_label.setStyleSheet("color: white;")
+
+        # Add to history and update graph
+        self.apex_rank_history.append((time.time(), current_score))
+        self._update_apex_graph()
+
+    def _update_apex_graph(self):
+        from matplotlib.ticker import MaxNLocator
+        canvas = self.apex_tab.graph_canvas
+        ax = canvas.axes
+        ax.clear()
+
+        if self.apex_rank_history:
+            timestamps, scores = zip(*self.apex_rank_history)
+            match_numbers = range(1, len(scores) + 1)
+
+            ax.plot(match_numbers, scores, marker='o', linestyle='-', color='#007ACC')
+            
+            # Set labels and title
+            ax.set_xlabel("試合数")
+            ax.set_ylabel("ランクスコア (RP)")
+            ax.set_title("ランクスコア推移")
+            
+            # Ensure x-axis ticks are integers
+            ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+            ax.set_xlim(left=0.5, right=len(scores) + 0.5)
+
+            # Auto-adjust Y-axis padding
+            min_score, max_score = min(scores), max(scores)
+            padding = (max_score - min_score) * 0.1 if (max_score - min_score) > 0 else 10
+            ax.set_ylim(min_score - padding - 50, max_score + padding + 50)
+            
+            ax.grid(True, which='both', linestyle='--', linewidth=0.5, color='#444444')
+        else:
+            # If no data, show empty graph
+            ax.set_xlabel("試合数")
+            ax.set_ylabel("ランクスコア (RP)")
+            ax.set_title("ランクスコア推移")
+            ax.grid(True, which='both', linestyle='--', linewidth=0.5, color='#444444')
+
+        canvas.figure.tight_layout()
+        canvas.draw()
+
+    @QtCore.pyqtSlot(str)
+    def _on_apex_tracker_error(self, message):
+        QtWidgets.QMessageBox.warning(self, "トラッカーエラー", message)
+        if self.apex_tab.track_button.isChecked():
+            self.apex_tab.track_button.setChecked(False)
 
     # --- Method Assignments from Imported Logic ---
     # Presets
