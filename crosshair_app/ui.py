@@ -375,7 +375,7 @@ class ControlPanel(QtWidgets.QWidget):
             # Improved Y-axis scaling with more padding
             min_score, max_score = min(scores), max(scores)
             score_range = max_score - min_score
-            MIN_VISIBLE_RANGE = 800  # Increased minimum range for better visibility
+            MIN_VISIBLE_RANGE = 1500  # Increased minimum range for better visibility
 
             if score_range < MIN_VISIBLE_RANGE:
                 mid_point = (min_score + max_score) / 2
@@ -397,7 +397,7 @@ class ControlPanel(QtWidgets.QWidget):
             ax.text(1, score + (score*0.02), str(score), ha='center', va='bottom', color='#ffffff', fontsize=10, weight='bold',
                     bbox=dict(facecolor='#282c34', edgecolor='none', boxstyle='round,pad=0.3', alpha=0.7))
             ax.set_xlim(0.5, 1.5)
-            ax.set_ylim(score - 400, score + 400) # Increased fixed range for a single point
+            ax.set_ylim(score - 500, score + 500) # Increased fixed range for a single point
             ax.set_xticks([1]) # Ensure only '1' is shown for single point
 
         else:  # No data
@@ -406,7 +406,7 @@ class ControlPanel(QtWidgets.QWidget):
             ax.set_xticks([])
             ax.set_yticks([])
 
-        canvas.figure.tight_layout(pad=3.0) # Increased padding for overall layout
+        canvas.figure.tight_layout(pad=3.5) # Increased padding for overall layout
         canvas.draw()
 
     @QtCore.pyqtSlot(str)
