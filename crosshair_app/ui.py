@@ -358,10 +358,10 @@ class ControlPanel(QtWidgets.QWidget):
             match_numbers = range(1, len(scores) + 1)
 
             # Stylish plot
-            line_color = '#8A2BE2'  # A vibrant purple
-            fill_color = '#8A2BE2'
-            ax.plot(match_numbers, scores, marker='o', linestyle='-', color=line_color, linewidth=3, markersize=9, markeredgecolor='#282c34', markeredgewidth=2)
-            ax.fill_between(match_numbers, scores, color=fill_color, alpha=0.2, interpolate=True)
+            line_color = '#00BFFF'  # Vibrant blue
+            fill_color = '#00BFFF'
+            ax.plot(match_numbers, scores, marker='o', linestyle='-', color=line_color, linewidth=2.5, markersize=7, markeredgecolor='#282c34', markeredgewidth=1.5)
+            ax.fill_between(match_numbers, scores, color=fill_color, alpha=0.15, interpolate=True)
 
             # Add data point labels with subtle background
             for i, score in enumerate(scores):
@@ -393,7 +393,7 @@ class ControlPanel(QtWidgets.QWidget):
 
         elif self.apex_rank_history:  # Exactly one data point
             score = self.apex_rank_history[0][1]
-            ax.plot([1], [score], marker='o', linestyle='-', color='#8A2BE2', markersize=9, markeredgecolor='#282c34', markeredgewidth=2)
+            ax.plot([1], [score], marker='o', linestyle='-', color='#00BFFF', markersize=7, markeredgecolor='#282c34', markeredgewidth=1.5)
             ax.text(1, score + (score*0.02), str(score), ha='center', va='bottom', color='#ffffff', fontsize=10, weight='bold',
                     bbox=dict(facecolor='#282c34', edgecolor='none', boxstyle='round,pad=0.3', alpha=0.7))
             ax.set_xlim(0.5, 1.5)
