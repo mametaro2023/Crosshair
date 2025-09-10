@@ -66,6 +66,7 @@ class ApexTracker(QtCore.QObject):
                     else:
                         rank_info = data.get("global", {}).get("rank", {})
                         current_score = rank_info.get("rankScore")
+                        al_stop_int = rank_info.get("ALStopInt") # Correctly extract ALStopInt from rank_info
 
                         if current_score is not None:
                             if self.last_score is None or current_score != self.last_score:
@@ -73,7 +74,8 @@ class ApexTracker(QtCore.QObject):
                                     "current_score": current_score,
                                     "last_score": self.last_score,
                                     "rank_name": rank_info.get("rankName"),
-                                    "rank_div": rank_info.get("rankDiv")
+                                    "rank_div": rank_info.get("rankDiv"),
+                                    "al_stop_int": al_stop_int # Add ALStopInt to payload
                                 }
                                 self.data_updated.emit(update_payload)
                                 self.last_score = current_score

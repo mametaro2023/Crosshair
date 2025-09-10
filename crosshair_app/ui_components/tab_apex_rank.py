@@ -5,7 +5,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from .. import config
 
 class MplCanvas(FigureCanvas):
-    def __init__(self, parent=None, width=5, height=4, dpi=100):
+    def __init__(self, parent=None, width=5, height=6, dpi=100):
         plt.rcParams['font.family'] = 'sans-serif'
         plt.rcParams['font.sans-serif'] = ['Yu Gothic', 'Meiryo', 'MS Gothic', 'TakaoPGothic', 'IPAPGothic', 'VL PGothic']
         plt.rcParams['axes.unicode_minus'] = False
@@ -122,6 +122,8 @@ class ApexRankTab(QtWidgets.QWidget):
         self.current_rank_label.setObjectName("rankLabel")
         self.current_score_label = QtWidgets.QLabel("N/A")
         self.current_score_label.setObjectName("scoreLabel")
+        self.current_position_label = QtWidgets.QLabel("N/A") # New label for position
+        self.current_position_label.setObjectName("positionLabel") # New object name
         self.score_change_label = QtWidgets.QLabel("")
         self.score_change_label.setObjectName("changeLabel")
 
@@ -130,6 +132,9 @@ class ApexRankTab(QtWidgets.QWidget):
         status_layout.addStretch()
         status_layout.addWidget(QtWidgets.QLabel("スコア:"))
         status_layout.addWidget(self.current_score_label)
+        status_layout.addSpacing(20) # Add spacing between score and position
+        status_layout.addWidget(QtWidgets.QLabel("順位:")) # Label for position
+        status_layout.addWidget(self.current_position_label)
         status_layout.addWidget(self.score_change_label)
         status_layout.addStretch()
         layout.addWidget(status_group)
@@ -137,7 +142,8 @@ class ApexRankTab(QtWidgets.QWidget):
         # --- Graph Group ---
         graph_group = QtWidgets.QGroupBox("ランクスコア推移 (セッション)")
         graph_layout = QtWidgets.QVBoxLayout(graph_group)
-        self.graph_canvas = MplCanvas(self, width=5, height=4, dpi=100)
+        self.graph_canvas = MplCanvas(self, width=5, height=6, dpi=100)
+        self.graph_canvas.setMinimumHeight(300) # Set a minimum height for the canvas
         graph_layout.addWidget(self.graph_canvas)
         layout.addWidget(graph_group, 1)
 

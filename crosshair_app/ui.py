@@ -19,7 +19,7 @@ class ControlPanel(QtWidgets.QWidget):
         self.overlay = overlay
         self.setWindowTitle("Crosshair Control Panel")
         self.setWindowIcon(QtGui.QIcon("mame.png"))
-        self.setGeometry(100, 100, 810, 720)
+        self.setGeometry(100, 100, 810, 820)
         self.apex_rank_history = []
         self._panel_animations = []
 
@@ -310,6 +310,7 @@ class ControlPanel(QtWidgets.QWidget):
         last_score = data["last_score"]
         rank_name = data["rank_name"]
         rank_div = data["rank_div"]
+        al_stop_int = data.get("al_stop_int") # Get ALStopInt
 
         # Format rank string
         if rank_name in ["Master", "Predator"]:
@@ -319,6 +320,10 @@ class ControlPanel(QtWidgets.QWidget):
         
         self.apex_tab.current_rank_label.setText(rank_str)
         self.apex_tab.current_score_label.setText(f"{current_score:,} RP")
+        if al_stop_int is not None:
+            self.apex_tab.current_position_label.setText(f"{al_stop_int:,}") # Update position label
+        else:
+            self.apex_tab.current_position_label.setText("N/A")
 
         # Update score change
         if last_score is not None:
@@ -375,11 +380,11 @@ class ControlPanel(QtWidgets.QWidget):
             # Improved Y-axis scaling with more padding
             min_score, max_score = min(scores), max(scores)
             score_range = max_score - min_score
-            MIN_VISIBLE_RANGE = 1500  # Increased minimum range for better visibility
+            MIN_ABSOLUTE_Y_RANGE = 2000 # Ensure at least 2000 RP range
 
-            if score_range < MIN_VISIBLE_RANGE:
+            if score_range < MIN_ABSOLUTE_Y_RANGE:
                 mid_point = (min_score + max_score) / 2
-                ax.set_ylim(mid_point - (MIN_VISIBLE_RANGE / 2), mid_point + (MIN_VISIBLE_RANGE / 2))
+                ax.set_ylim(mid_point - (MIN_ABSOLUTE_Y_RANGE / 2), mid_point + (MIN_ABSOLUTE_Y_RANGE / 2))
             else:
                 # Add more padding if the range is large
                 padding = score_range * 0.15 # Increased padding
@@ -397,7 +402,7 @@ class ControlPanel(QtWidgets.QWidget):
             ax.text(1, score + (score*0.02), str(score), ha='center', va='bottom', color='#ffffff', fontsize=10, weight='bold',
                     bbox=dict(facecolor='#282c34', edgecolor='none', boxstyle='round,pad=0.3', alpha=0.7))
             ax.set_xlim(0.5, 1.5)
-            ax.set_ylim(score - 500, score + 500) # Increased fixed range for a single point
+            ax.set_ylim(score - 1000, score + 1000) # Ensure 2000 RP range for single point
             ax.set_xticks([1]) # Ensure only '1' is shown for single point
 
         else:  # No data
