@@ -9,9 +9,9 @@ class StatsTracker(QObject):
     stats_updated = pyqtSignal(dict)
     error_occurred = pyqtSignal(str)
 
-    def __init__(self, api_key, platform, player):
+    def __init__(self, platform, player):
         super().__init__()
-        self.api_key = api_key
+        self.api_key = load_api_key()
         self.platform = platform
         self.player = player
         self.is_running = False

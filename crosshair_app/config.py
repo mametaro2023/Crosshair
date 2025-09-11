@@ -1,5 +1,6 @@
 import os
 import json
+import configparser
 
 APP_VERSION = "ver1.8" 
 CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".crosshair_config.json")
@@ -67,3 +68,11 @@ def save_config(config_data):
             json.dump(config_data, f, indent=4)
     except Exception as e:
         print(f"設定の保存に失敗: {e}")
+
+def load_api_key():
+    config = configparser.ConfigParser()
+    config_file = os.path.join(os.path.dirname(__file__), 'config.ini')
+    if os.path.exists(config_file):
+        config.read(config_file)
+        return config.get('APEX', 'API_KEY', fallback=None)
+    return None

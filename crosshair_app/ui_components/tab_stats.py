@@ -35,7 +35,7 @@ class StatsTab(QWidget):
 
         settings_layout.addRow(QLabel("Platform:"), self.platform_combo)
         settings_layout.addRow(QLabel("Player Name:"), self.player_name_input)
-        settings_layout.addRow(QLabel("API Key:"), self.api_key_input)
+        
         
         button_layout = QHBoxLayout()
         button_layout.addWidget(self.start_button)

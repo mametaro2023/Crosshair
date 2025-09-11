@@ -1,5 +1,6 @@
 import requests
 import json
+from config import load_api_key
 
 # APIエンドポイントのURL
 # 例: PCプラットフォームのプレイヤー 'mametaro2022' の情報を取得
@@ -7,7 +8,7 @@ url = "https://api.mozambiquehe.re/bridge?platform=PC&player=mametaro2022"
 
 # リクエストヘッダー
 headers = {
-    "Authorization": "97e0ee7baafc1182f0679b24f02623c8"
+    "Authorization": load_api_key()
 }
 
 try:

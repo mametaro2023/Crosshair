@@ -1,6 +1,8 @@
 import requests
 
-YOUR_API_KEY = "97e0ee7baafc1182f0679b24f02623c8"  # Replace with your actual API key
+from crosshair_app.config import load_api_key
+
+YOUR_API_KEY = load_api_key()  # Replace with your actual API key
 PLAYER_UID = "1006594244470" # Replace with the player's UID
 PLATFORM = "PC"  # Options: PC, PS4, X1
 PLAYER_NAME = "mametaro2022"  # Replace with the player's name

@@ -1,8 +1,8 @@
-
 import time
 import threading
 import requests
 from PyQt5 import QtCore
+from ..config import load_api_key
 
 class ApexTracker(QtCore.QObject):
     # Signals to communicate with the GUI thread
@@ -12,7 +12,7 @@ class ApexTracker(QtCore.QObject):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.api_key = "97e0ee7baafc1182f0679b24f02623c8" # From test.py
+        self.api_key = load_api_key()
         self.base_url = "https://api.mozambiquehe.re/bridge"
         self.platform = "PC"
         self.username = ""
