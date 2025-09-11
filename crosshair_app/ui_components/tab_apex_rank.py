@@ -2,7 +2,6 @@
 from PyQt5 import QtWidgets, QtCore, QtGui
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from .. import config
 
 class MplCanvas(FigureCanvas):
     def __init__(self, parent=None, width=5, height=6, dpi=100):
@@ -98,7 +97,6 @@ class ApexRankTab(QtWidgets.QWidget):
         self.username_edit.setText(saved_username)
 
         saved_auto_track = self.overlay.auto_track_apex
-        print(f"[DEBUG] ApexRankTab: Initial auto_track_apex state from overlay: {saved_auto_track}")
         self.auto_track_checkbox.setChecked(saved_auto_track)
 
         # Connect signals to save changes
@@ -122,8 +120,8 @@ class ApexRankTab(QtWidgets.QWidget):
         self.current_rank_label.setObjectName("rankLabel")
         self.current_score_label = QtWidgets.QLabel("N/A")
         self.current_score_label.setObjectName("scoreLabel")
-        self.current_position_label = QtWidgets.QLabel("N/A") # New label for position
-        self.current_position_label.setObjectName("positionLabel") # New object name
+        self.current_position_label = QtWidgets.QLabel("N/A")
+        self.current_position_label.setObjectName("positionLabel")
         self.score_change_label = QtWidgets.QLabel("")
         self.score_change_label.setObjectName("changeLabel")
 

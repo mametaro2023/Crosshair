@@ -35,13 +35,11 @@ class ApexTracker(QtCore.QObject):
         self._is_running = True
         self._thread = threading.Thread(target=self._tracking_loop, daemon=True)
         self._thread.start()
-        self.tracking_status_changed.emit(True) # Emit signal when tracking starts
-        print("[DEBUG] ApexTracker: tracking_status_changed(True) emitted.")
+        self.tracking_status_changed.emit(True)
 
     def stop_tracking(self):
         self._is_running = False
-        self.tracking_status_changed.emit(False) # Emit signal when tracking stops
-        print("[DEBUG] ApexTracker: tracking_status_changed(False) emitted.")
+        self.tracking_status_changed.emit(False)
 
     def _tracking_loop(self):
         initial_data_fetched = False
@@ -61,7 +59,7 @@ class ApexTracker(QtCore.QObject):
                             self.error_occurred.emit(f'APIエラー: {data["Error"]}')
                             break # Stop tracking if initial fetch fails
                         else:
-                            print(f'Apex Tracker: API Error - {data["Error"]}') # Log subsequent errors
+                            pass # Log subsequent errors
                     
                     else:
                         rank_info = data.get("global", {}).get("rank", {})
@@ -90,14 +88,14 @@ class ApexTracker(QtCore.QObject):
                         self.error_occurred.emit(f"APIサーバーエラー: {response.status_code}")
                         break # Stop tracking
                     else:
-                        print(f"Apex Tracker: API Error - {response.status_code}")
+                        pass
 
             except requests.exceptions.RequestException as e:
                 if not initial_data_fetched:
                     self.error_occurred.emit(f"ネットワークエラー: {e}")
                     break # Stop tracking
                 else:
-                    print(f"Apex Tracker: Network Error - {e}")
+                    pass
             
             # Wait for 30 seconds, but check for stop signal every second
             for _ in range(30):

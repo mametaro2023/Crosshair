@@ -1,11 +1,8 @@
 import os
 import time
-import webbrowser
 from PyQt5 import QtCore, QtGui, QtWidgets
-import keyboard
 
 from . import utils
-from . import config
 from .dialogs import SettingsDialog, KeyCaptureDialog
 from .ui_components import tab_general, tab_crosshair, tab_dot, tab_keys, tab_apex_rank
 
@@ -15,11 +12,10 @@ from .panel_logic import presets, updates, handlers, apex_tracker
 class ControlPanel(QtWidgets.QWidget):
     def __init__(self, overlay):
         super().__init__()
-        self._initial_load_complete = False
         self.overlay = overlay
         self.setWindowTitle("Crosshair Control Panel")
         self.setWindowIcon(QtGui.QIcon("mame.png"))
-        self.setGeometry(100, 100, 810, 820)
+        self.setGeometry(100, 100, 810, 900)
         self.apex_rank_history = []
         self._panel_animations = []
 
@@ -51,7 +47,6 @@ class ControlPanel(QtWidgets.QWidget):
         self.update_control_panel_ui()
         self.load_presets()
         
-        print(f"[DEBUG] ControlPanel.__init__: overlay.monitor_apex={self.overlay.monitor_apex}, utils.psutil={utils.psutil}")
         if self.overlay.monitor_apex and utils.psutil:
             self.toggle_apex_monitoring(True)
 
@@ -271,7 +266,7 @@ class ControlPanel(QtWidgets.QWidget):
         self.apex_tracker = apex_tracker.ApexTracker(self)
         self.apex_tracker.data_updated.connect(self._on_apex_data_updated)
         self.apex_tracker.error_occurred.connect(self._on_apex_tracker_error)
-        self.apex_tracker.tracking_status_changed.connect(self._on_apex_tracker_status_changed) # New connection
+        self.apex_tracker.tracking_status_changed.connect(self._on_apex_tracker_status_changed)
 
     def _connect_apex_signals(self):
         self.apex_tab.track_button.toggled.connect(self._on_apex_track_button_toggled)
@@ -279,25 +274,18 @@ class ControlPanel(QtWidgets.QWidget):
         self.apex_tab.platform_combo.currentIndexChanged.connect(self._update_apex_credentials)
 
     def _on_apex_track_button_toggled(self, checked):
-        print(f"[DEBUG] _on_apex_track_button_toggled called with checked={checked}")
         if checked:
             self._update_apex_credentials()
-            print("[DEBUG] Starting Apex tracking.")
             self.apex_tracker.start_tracking()
             self.apex_rank_history = [] # Reset history on new tracking session
             self._update_apex_graph()
         else:
-            print("[DEBUG] Stopping Apex tracking.")
             self.apex_tracker.stop_tracking()
 
     def _update_apex_credentials(self):
         platform = self.apex_tab.platform_combo.currentData()
         username = self.apex_tab.username_edit.text()
         self.apex_tracker.set_credentials(platform, username)
-        # Save the updated credentials to overlay and then to config
-        self.overlay.apex_platform = platform
-        self.overlay.apex_username = username
-        self.overlay.save_global_config() # Save immediately
         # Save the updated credentials to overlay and then to config
         self.overlay.apex_platform = platform
         self.overlay.apex_username = username
@@ -353,6 +341,8 @@ class ControlPanel(QtWidgets.QWidget):
         ax.clear()
         canvas.apply_style()  # Re-apply the custom style
 
+        DEFAULT_VISIBLE_RANGE = 300 # A good range to show typical +/-75 RP fluctuations
+
         # Set labels and title (do this once)
         ax.set_xlabel("試合数", fontsize=12, color='#e0e0e0')
         ax.set_ylabel("ランクスコア (RP)", fontsize=12, color='#e0e0e0')
@@ -380,11 +370,11 @@ class ControlPanel(QtWidgets.QWidget):
             # Improved Y-axis scaling with more padding
             min_score, max_score = min(scores), max(scores)
             score_range = max_score - min_score
-            MIN_ABSOLUTE_Y_RANGE = 2000 # Ensure at least 2000 RP range
+            DEFAULT_VISIBLE_RANGE = 300 # A good range to show typical +/-75 RP fluctuations
 
-            if score_range < MIN_ABSOLUTE_Y_RANGE:
+            if score_range < DEFAULT_VISIBLE_RANGE:
                 mid_point = (min_score + max_score) / 2
-                ax.set_ylim(mid_point - (MIN_ABSOLUTE_Y_RANGE / 2), mid_point + (MIN_ABSOLUTE_Y_RANGE / 2))
+                ax.set_ylim(mid_point - (DEFAULT_VISIBLE_RANGE / 2), mid_point + (DEFAULT_VISIBLE_RANGE / 2))
             else:
                 # Add more padding if the range is large
                 padding = score_range * 0.15 # Increased padding
@@ -402,7 +392,7 @@ class ControlPanel(QtWidgets.QWidget):
             ax.text(1, score + (score*0.02), str(score), ha='center', va='bottom', color='#ffffff', fontsize=10, weight='bold',
                     bbox=dict(facecolor='#282c34', edgecolor='none', boxstyle='round,pad=0.3', alpha=0.7))
             ax.set_xlim(0.5, 1.5)
-            ax.set_ylim(score - 1000, score + 1000) # Ensure 2000 RP range for single point
+            ax.set_ylim(score - (DEFAULT_VISIBLE_RANGE / 2), score + (DEFAULT_VISIBLE_RANGE / 2)) # Use default visible range for single point
             ax.set_xticks([1]) # Ensure only '1' is shown for single point
 
         else:  # No data
@@ -499,10 +489,10 @@ class ControlPanel(QtWidgets.QWidget):
     update_image_crosshair_size = handlers.update_image_crosshair_size
 
     update_crosshair_outline_alpha = handlers.update_crosshair_outline_alpha
-    update_crosshair_inner_alpha = handlers.update_crosshair_inner_alpha # New line
+    update_crosshair_inner_alpha = handlers.update_crosshair_inner_alpha
     update_circle_outline_alpha = handlers.update_circle_outline_alpha
     update_chevron_outline_alpha = handlers.update_chevron_outline_alpha
-    toggle_antialiasing = handlers.toggle_antialiasing # Add this line
+    toggle_antialiasing = handlers.toggle_antialiasing
 
     import_valorant_crosshair = handlers.import_valorant_crosshair
 
@@ -650,7 +640,6 @@ class ControlPanel(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot(bool)
     def on_game_state_changed(self, is_running):
-        print(f"[DEBUG] on_game_state_changed: is_running={is_running}, monitor_apex={self.overlay.monitor_apex}, auto_track_apex={self.overlay.auto_track_apex}")
         if self.overlay.monitor_apex:
             self.set_master_enabled(is_running)
             if is_running:
@@ -658,27 +647,21 @@ class ControlPanel(QtWidgets.QWidget):
                 self.activateWindow()
                 # New: Automatically start tracking if auto_track_apex is enabled
                 if self.overlay.auto_track_apex:
-                    print("[DEBUG] auto_track_apex is True and Apex is running. Setting ApexTracker credentials.")
                     # Ensure credentials are set before attempting to start tracking
                     self.apex_tracker.set_credentials(self.overlay.apex_platform, self.overlay.apex_username)
                     
-                    print("[DEBUG] Attempting to check track_button.")
                     # Only set if not already checked to ensure toggled signal is emitted
                     if not self.apex_tab.track_button.isChecked():
                         self.apex_tab.track_button.setChecked(True)
-                else:
-                    print("[DEBUG] auto_track_apex is False or Apex is not running.")
             else:
-                print("[DEBUG] Apex is not running.")
                 # If auto-tracking is enabled and Apex is not running, stop tracking
                 if self.overlay.auto_track_apex:
-                    print("[DEBUG] auto_track_apex is True and Apex is not running. Stopping Apex tracking.")
                     self.apex_tracker.stop_tracking()
                     # Ensure the track button is unchecked if tracking was auto-started and Apex exited
                     if self.apex_tab.track_button.isChecked():
                         self.apex_tab.track_button.setChecked(False)
         else:
-            print("[DEBUG] monitor_apex is False. Game state change ignored.")
+            pass
 
     def toggle_apex_monitoring(self, checked):
         self.overlay.monitor_apex = checked
